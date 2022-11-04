@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  {{!-- Title --}}
+  {{#if title}}
+  <title>{{title}}</title>
+  {{/if}}
+
+  {{!-- Meta --}}
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  {{!--TODO description, image, url, theme-color, author --}}
+
+  {{!-- Global styles --}}
+  <link rel="stylesheet" href="{{>PUBLIC_URL}}/styles/global.css" />
+
+  {{!--TODO Dev script --}}
+</head>
+
+<body>
+  {{> @partial-block }}
+</body>
+
+</html>
