@@ -1,7 +1,7 @@
-{{>boilerplate title="Hello!"}}
+{{#>partials/boilerplate title="Hello!"}}
 Hello!
 <br />
 Hello message: '{{msg}}'
 <br />
-My partial: {{my_partial}}
-{{boilerplate}}
+My partial: {{>partials/my_partial}}
+{{/partials/boilerplate}}

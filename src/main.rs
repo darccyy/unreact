@@ -6,22 +6,18 @@ fn main() -> ssg::AppResult<()> {
   // Create interface object with default options
   let mut app = App::new(AppOptions::default())?;
 
-  println!("{app:#?}");
-
-  // return Ok(());
-
   // Create `/index.html` page using `index.hbs` template, test data
-  app.index(&App::render("index", &json!({"test": 123}))?)?;
+  app.index(&app.render("index", &json!({"test": 123}))?)?;
 
   // Create `/404.html` page using `error/not_found.hbs` template, test data
-  app.not_found(&App::render("error/not_found", &json!({"test": 123}))?)?;
+  app.not_found(&app.render("error/not_found", &json!({"test": 123}))?)?;
 
   // Create custom page at `/hello.html` using `hello.hbs` template, custom message
-  app.page("hello", &App::render("hello", &json!({"msg": "Hello!"}))?)?;
+  app.page("hello", &app.render("hello", &json!({"msg": "Hello!"}))?)?;
   // Create custom page at `/hello/again.html` using `hello.hbs` template, different custom message
   app.page(
     "hello/again",
-    &App::render("hello", &json!({"test": "Hello again!"}))?,
+    &app.render("hello", &json!({"test": "Hello again!"}))?,
   )?;
 
   // Example data for 'dynamic' generation
@@ -34,9 +30,11 @@ fn main() -> ssg::AppResult<()> {
     // Each data entry, create page with id, and 'dynamic' content
     app.page(
       &format!("post/{name}"),
-      &App::render("post", &json!({ "content": content, "day": day }))?,
+      &app.render("post", &json!({ "content": content, "day": day }))?,
     )?;
   }
+
+  println!("{app:#?}");
 
   if is_dev() {
     // Open dev server and listen

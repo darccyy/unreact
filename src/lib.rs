@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, fs, path::Path};
 
-// use handlebars::template;
+use handlebars::Handlebars;
 use serde_json::Value;
 
 /// Alias of hashmap
@@ -48,11 +48,29 @@ impl Default for AppOptions {
   }
 }
 
+/// File object
+#[derive(Debug)]
+pub struct File {
+  path: String,
+  content: String,
+}
+
+impl File {
+  /// Create new `File`
+  pub fn new(path: &str, content: &str) -> Self {
+    File {
+      path: path.to_string(),
+      content: content.to_string(),
+    }
+  }
+}
+
 /// API interface object
 #[derive(Debug)]
 pub struct App {
   pub options: AppOptions,
   pub templates: Templates,
+  pub files: Vec<File>,
 }
 
 impl App {
@@ -64,6 +82,7 @@ impl App {
     Ok(App {
       templates: Self::load_templates(&options)?,
       options,
+      files: Vec::new(),
     })
   }
 
@@ -123,10 +142,10 @@ impl App {
             App::load_templates_from(templates, parent, &format!("{child}{slash}{name}",))?;
           } else {
             // Add to templates
-            let contents = fs::read_to_string(file.path())?;
+            let content = fs::read_to_string(file.path())?;
             // Get file name without extension
             if let Some(file_name) = get_file_name(&file) {
-              templates.insert(format!("{child}{slash}{file_name}",), contents);
+              templates.insert(format!("{child}{slash}{file_name}",), content);
             }
           }
         }
@@ -136,28 +155,78 @@ impl App {
     Ok(())
   }
 
-  pub fn render(template: &str, data: &Value) -> AppResult<String> {
-    todo!();
+  /// Render a template with data
+  pub fn render(&self, name: &str, data: &Value) -> AppResult<String> {
+    // Get template string from name
+    let template = match self.templates.get(name) {
+      Some(s) => s,
+      None => {
+        return Err(Box::new(AppError(format!(
+          "Could not find template '{name}'"
+        ))))
+      }
+    };
+
+    // Create handlebars registry
+    let mut reg = Handlebars::new();
+
+    // Register all other templates as partials
+    for (k, v) in &self.templates {
+      reg.register_partial(k, v)?;
+    }
+
+    //TODO Merge json with custom templates
+
+    // Render template
+    Ok(reg.render_template(template, data)?)
   }
 
+  /// Register new page (file) with any path
   pub fn page(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
-    todo!();
+    self.files.push(File::new(path, content));
+
+    Ok(self)
   }
 
+  /// Register index page (`./index.html`)
   pub fn index(&mut self, content: &str) -> AppResult<&mut Self> {
-    todo!();
+    self.page("index", content)
   }
 
+  /// Register 404 not found page (`./404.html`)
   pub fn not_found(&mut self, content: &str) -> AppResult<&mut Self> {
-    todo!();
+    self.page("404", content)
   }
 
+  /// Create all files in production mode
   pub fn finish(&mut self) -> AppResult<&mut Self> {
-    todo!();
+    for file in &self.files {
+      // Create folders vertically
+      println!("{}", file.path);
+      let folders = file.path.split("/").collect::<Vec<_>>();
+      for i in 1..folders.len() {
+        let path = format!("./{}/{}", self.options.build, folders.get(0..i).unwrap().join("/"));
+        println!(" -- {}", path);
+        // Check if exists, create if not
+        if !Path::new(&path).exists() {
+          fs::create_dir(path)?;
+        }
+      }
+
+      // Create file
+      fs::write(
+        format!("./{}/{}.html", self.options.build, file.path),
+        &file.content,
+      )?;
+    }
+    // todo!();
+    Ok(self)
   }
 
+  /// Open development server and listen
   pub fn listen(&mut self) -> AppResult<&mut Self> {
-    todo!();
+    // todo!();
+    Ok(self)
   }
 }
 
