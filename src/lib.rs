@@ -4,7 +4,7 @@ use handlebars::Handlebars;
 use serde_json::Value;
 
 /// Alias of hashmap
-type Templates = HashMap<String, String>;
+type FileMap = HashMap<String, String>;
 
 /// Alias of common result type
 pub type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
@@ -21,22 +21,22 @@ impl std::fmt::Display for AppError {
   }
 }
 
-/// Options for directories
+/// Config for directories and options
 #[derive(Debug)]
-pub struct AppOptions {
+pub struct AppConfig {
   /// Directory of output files
-  build: String,
+  pub build: String,
   /// Directory of templates and partials (`.hbs`)
-  templates: String,
+  pub templates: String,
   /// Directory of static public assets, such as images
-  public: String,
+  pub public: String,
   /// Directory of styles (`.scss`)
-  styles: String,
+  pub styles: String,
   /// If links between documents should include `.html` and `/index.html`
-  _include_extension: bool,
+  pub _include_extension: bool,
 }
 
-impl Default for AppOptions {
+impl Default for AppConfig {
   fn default() -> Self {
     Self {
       build: "build".to_string(),
@@ -68,29 +68,33 @@ impl File {
 /// API interface object
 #[derive(Debug)]
 pub struct App {
-  pub options: AppOptions,
-  pub templates: Templates,
-  pub files: Vec<File>,
+  pub config: AppConfig,
+  pub templates: FileMap,
+  pub styles: FileMap,
+  pub pages: Vec<File>,
+  pub _public: Vec<File>,
 }
 
 impl App {
   /// Create new API interface
-  /// Use `Default::default()` for default options
-  pub fn new(options: AppOptions) -> AppResult<Self> {
-    Self::check_dirs(&options)?;
+  /// Use `Default::default()` for default config
+  pub fn new(config: AppConfig) -> AppResult<Self> {
+    Self::check_dirs(&config)?;
 
     Ok(App {
-      templates: Self::load_templates(&options)?,
-      options,
-      files: Vec::new(),
+      templates: Self::load_templates(&config)?,
+      styles: Self::load_styles(&config)?,
+      pages: Vec::new(),
+      _public: Vec::new(),
+      config,
     })
   }
 
-  /// Returns as error if any value of `options` are not valid directories.
+  /// Returns as error if any value of `config` are not valid directories.
   /// Creates build directory
-  fn check_dirs(options: &AppOptions) -> AppResult<()> {
+  fn check_dirs(config: &AppConfig) -> AppResult<()> {
     // Collate directory names
-    let dirs = vec![&options.templates, &options.public, &options.styles];
+    let dirs = vec![&config.templates, &config.public, &config.styles];
 
     // Loop directories that should exist
     for dir in dirs {
@@ -104,27 +108,37 @@ impl App {
     }
 
     // Remove build directory if exists
-    if Path::new(&format!("./{}", options.build)).exists() {
-      fs::remove_dir_all(format!("./{}", options.build))?;
+    if Path::new(&format!("./{}", config.build)).exists() {
+      fs::remove_dir_all(format!("./{}", config.build))?;
     }
     // Create new build directory
-    fs::create_dir(format!("./{}", options.build))?;
+    fs::create_dir(format!("./{}", config.build))?;
+    // Create generic subfolders
+    fs::create_dir(format!("./{}/styles", config.build))?;
+    fs::create_dir(format!("./{}/public", config.build))?;
 
     Ok(())
   }
 
-  /// Load all templates in directory of `templates` property in `options`
-  fn load_templates(options: &AppOptions) -> AppResult<Templates> {
-    let mut templates = Templates::new();
-    App::load_templates_from(&mut templates, &options.templates, "")?;
+  /// Load all templates in directory of `templates` property in `config`
+  fn load_templates(config: &AppConfig) -> AppResult<FileMap> {
+    let mut templates = FileMap::new();
+    App::load_filemap(&mut templates, &config.templates, "")?;
     Ok(templates)
   }
 
-  /// Recursively read templates from tree directory.
+  /// Import all scss files in directory of `styles` property in `config`
+  fn load_styles(config: &AppConfig) -> AppResult<FileMap> {
+    let mut styles = FileMap::new();
+    App::load_filemap(&mut styles, &config.styles, "")?;
+    Ok(styles)
+  }
+
+  /// Recursively read files from tree directory.
   /// `templates`: Mutable borrow to hashmap
   /// `parent`: Directory to collate all templates
   /// `child`: Path of subdirectories (not including `parent`)
-  fn load_templates_from(templates: &mut Templates, parent: &str, child: &str) -> AppResult<()> {
+  fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
     // Full path, relative to workspace, of directory
     let dir_path = format!("./{parent}/{child}");
 
@@ -139,13 +153,13 @@ impl App {
           // If is folder
           if Path::new(&path).is_dir() {
             // Recurse function
-            App::load_templates_from(templates, parent, &format!("{child}{slash}{name}",))?;
+            App::load_filemap(map, parent, &format!("{child}{slash}{name}",))?;
           } else {
             // Add to templates
             let content = fs::read_to_string(file.path())?;
             // Get file name without extension
             if let Some(file_name) = get_file_name(&file) {
-              templates.insert(format!("{child}{slash}{file_name}",), content);
+              map.insert(format!("{child}{slash}{file_name}",), content);
             }
           }
         }
@@ -175,7 +189,20 @@ impl App {
       reg.register_partial(k, v)?;
     }
 
-    //TODO Merge json with custom templates
+    // Register default partials
+    //TODO Change for production mode
+    reg.register_partial(
+      "PUBLIC_URL",
+      format!(
+        "file:///{dir}/{build}",
+        dir = std::env::current_dir()
+          .unwrap()
+          .to_str()
+          .unwrap()
+          .to_string(),
+        build = &self.config.build
+      ),
+    )?;
 
     // Render template
     Ok(reg.render_template(template, data)?)
@@ -183,7 +210,7 @@ impl App {
 
   /// Register new page (file) with any path
   pub fn page(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
-    self.files.push(File::new(path, content));
+    self.pages.push(File::new(path, content));
 
     Ok(self)
   }
@@ -200,27 +227,50 @@ impl App {
 
   /// Create all files in production mode
   pub fn finish(&mut self) -> AppResult<&mut Self> {
-    for file in &self.files {
-      // Create folders vertically
-      println!("{}", file.path);
-      let folders = file.path.split("/").collect::<Vec<_>>();
-      for i in 1..folders.len() {
-        let path = format!("./{}/{}", self.options.build, folders.get(0..i).unwrap().join("/"));
-        println!(" -- {}", path);
-        // Check if exists, create if not
-        if !Path::new(&path).exists() {
-          fs::create_dir(path)?;
-        }
-      }
-
+    // Create pages
+    for file in &self.pages {
+      let parent = &self.config.build;
+      // Create folder recursively
+      Self::create_dir_all_safe(parent, &file.path)?;
       // Create file
-      fs::write(
-        format!("./{}/{}.html", self.options.build, file.path),
-        &file.content,
-      )?;
+      fs::write(format!("./{parent}/{}.html", file.path), &file.content)?;
     }
-    // todo!();
+
+    // Create styles
+    for (path, content) in &self.styles {
+      let parent = format!("{}/{}", self.config.build, self.config.styles);
+      // Create folder recursively
+      Self::create_dir_all_safe(&parent, &path)?;
+      // Create file
+      fs::write(format!("./{parent}/{path}.css"), content)?;
+    }
+
+    // Copy public files
+    for file in fs::read_dir(format!("./{}", &self.config.public))?.flatten() {
+      if let Some(name) = file.file_name().to_str() {
+        fs::copy(
+          file.path(),
+          format!("./{}/public/{}", self.config.build, name),
+        )?;
+      }
+    }
+
     Ok(self)
+  }
+
+  /// Create folder recursively
+  // ? Move to super ?
+  fn create_dir_all_safe(parent: &str, child: &str) -> AppResult<()> {
+    let folders = child.split("/").collect::<Vec<_>>();
+    for i in 1..folders.len() {
+      let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));
+      // Check if exists, create if not
+      if !Path::new(&path).exists() {
+        fs::create_dir(path)?;
+      }
+    }
+
+    Ok(())
   }
 
   /// Open development server and listen

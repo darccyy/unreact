@@ -1,13 +1,22 @@
 use serde_json::json;
 
-use ssg::{App, AppOptions};
+use ssg::{App, AppConfig};
 
 fn main() -> ssg::AppResult<()> {
+  // Example data for 'dynamic' generation
+  let posts = vec![
+    ("example", "this is an example", "Monday"),
+    ("other", "another example", "Wednesday"),
+  ];
+
   // Create interface object with default options
-  let mut app = App::new(AppOptions::default())?;
+  let mut app = App::new(AppConfig {
+    build: "docs".to_string(),
+    ..Default::default()
+  })?;
 
   // Create `/index.html` page using `index.hbs` template, test data
-  app.index(&app.render("index", &json!({"test": 123}))?)?;
+  app.index(&app.render("index", &json!({"test": 123, "posts": posts}))?)?;
 
   // Create `/404.html` page using `error/not_found.hbs` template, test data
   app.not_found(&app.render("error/not_found", &json!({"test": 123}))?)?;
@@ -17,14 +26,9 @@ fn main() -> ssg::AppResult<()> {
   // Create custom page at `/hello/again.html` using `hello.hbs` template, different custom message
   app.page(
     "hello/again",
-    &app.render("hello", &json!({"test": "Hello again!"}))?,
+    &app.render("hello", &json!({"msg": "Hello again!"}))?,
   )?;
 
-  // Example data for 'dynamic' generation
-  let posts = vec![
-    ("example", "this is an example", "Monday"),
-    ("other", "another example", "Wednesday"),
-  ];
   // Loop data
   for (name, content, day) in posts {
     // Each data entry, create page with id, and 'dynamic' content
@@ -34,14 +38,13 @@ fn main() -> ssg::AppResult<()> {
     )?;
   }
 
-  println!("{app:#?}");
-
   if is_dev() {
     // Open dev server and listen
     app.listen()?;
   } else {
     // Compile files for production
     app.finish()?;
+    println!("Compiled successfully.");
   }
 
   Ok(())
