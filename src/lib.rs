@@ -38,12 +38,22 @@ pub struct AppConfig {
 
 impl Default for AppConfig {
   fn default() -> Self {
-    Self {
+    AppConfig {
       build: "build".to_string(),
       templates: "templates".to_string(),
       public: "public".to_string(),
       styles: "styles".to_string(),
       _include_extension: true,
+    }
+  }
+}
+
+impl AppConfig {
+  pub fn github_pages() -> Self {
+    AppConfig {
+      build: "docs".to_string(),
+      _include_extension: false,
+      ..Default::default()
     }
   }
 }
@@ -56,7 +66,7 @@ pub struct File {
 }
 
 impl File {
-  /// Create new `File`
+  /// Create new `File` struct
   pub fn new(path: &str, content: &str) -> Self {
     File {
       path: path.to_string(),
@@ -68,25 +78,31 @@ impl File {
 /// API interface object
 #[derive(Debug)]
 pub struct App {
-  pub config: AppConfig,
-  pub templates: FileMap,
-  pub styles: FileMap,
-  pub pages: Vec<File>,
-  pub _public: Vec<File>,
+  /// Config options for app
+  config: AppConfig,
+  /// List of templates as file hashmap
+  templates: FileMap,
+  /// List of styles as file hashmap
+  styles: FileMap,
+  /// List of pages as file list
+  pages: Vec<File>,
+  /// Whether app should compile in dev mode
+  /// If true, localhost server will be opened
+  pub is_dev: bool,
 }
 
 impl App {
   /// Create new API interface
   /// Use `Default::default()` for default config
-  pub fn new(config: AppConfig) -> AppResult<Self> {
+  pub fn new(config: AppConfig, is_dev: bool) -> AppResult<Self> {
     Self::check_dirs(&config)?;
 
     Ok(App {
       templates: Self::load_templates(&config)?,
       styles: Self::load_styles(&config)?,
       pages: Vec::new(),
-      _public: Vec::new(),
       config,
+      is_dev,
     })
   }
 
@@ -123,50 +139,15 @@ impl App {
   /// Load all templates in directory of `templates` property in `config`
   fn load_templates(config: &AppConfig) -> AppResult<FileMap> {
     let mut templates = FileMap::new();
-    App::load_filemap(&mut templates, &config.templates, "")?;
+    load_filemap(&mut templates, &config.templates, "")?;
     Ok(templates)
   }
 
   /// Import all scss files in directory of `styles` property in `config`
   fn load_styles(config: &AppConfig) -> AppResult<FileMap> {
     let mut styles = FileMap::new();
-    App::load_filemap(&mut styles, &config.styles, "")?;
+    load_filemap(&mut styles, &config.styles, "")?;
     Ok(styles)
-  }
-
-  /// Recursively read files from tree directory.
-  /// `templates`: Mutable borrow to hashmap
-  /// `parent`: Directory to collate all templates
-  /// `child`: Path of subdirectories (not including `parent`)
-  fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
-    // Full path, relative to workspace, of directory
-    let dir_path = format!("./{parent}/{child}");
-
-    // Loop files in directory
-    for file in fs::read_dir(dir_path)?.flatten() {
-      if let Some(path) = file.path().to_str() {
-        let path = path.replace("\\", "/");
-        if let Some(name) = file.file_name().to_str() {
-          // Only include first slash if child directory is not empty
-          let slash = if child.is_empty() { "" } else { "/" };
-
-          // If is folder
-          if Path::new(&path).is_dir() {
-            // Recurse function
-            App::load_filemap(map, parent, &format!("{child}{slash}{name}",))?;
-          } else {
-            // Add to templates
-            let content = fs::read_to_string(file.path())?;
-            // Get file name without extension
-            if let Some(file_name) = get_file_name(&file) {
-              map.insert(format!("{child}{slash}{file_name}",), content);
-            }
-          }
-        }
-      }
-    }
-
-    Ok(())
   }
 
   /// Render a template with data
@@ -192,14 +173,10 @@ impl App {
     // Register default partials
     //TODO Change for production mode
     reg.register_partial(
-      "PUBLIC_URL",
+      "URL",
       format!(
         "file:///{dir}/{build}",
-        dir = std::env::current_dir()
-          .unwrap()
-          .to_str()
-          .unwrap()
-          .to_string(),
+        dir = std::env::current_dir().unwrap().to_str().unwrap(),
         build = &self.config.build
       ),
     )?;
@@ -209,6 +186,7 @@ impl App {
   }
 
   /// Register new page (file) with any path
+  ///TODO Move `render` function here
   pub fn page(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
     self.pages.push(File::new(path, content));
 
@@ -231,7 +209,7 @@ impl App {
     for file in &self.pages {
       let parent = &self.config.build;
       // Create folder recursively
-      Self::create_dir_all_safe(parent, &file.path)?;
+      create_dir_all_safe(parent, &file.path)?;
       // Create file
       fs::write(format!("./{parent}/{}.html", file.path), &file.content)?;
     }
@@ -240,9 +218,12 @@ impl App {
     for (path, content) in &self.styles {
       let parent = format!("{}/{}", self.config.build, self.config.styles);
       // Create folder recursively
-      Self::create_dir_all_safe(&parent, &path)?;
-      // Create file
-      fs::write(format!("./{parent}/{path}.css"), content)?;
+      create_dir_all_safe(&parent, &path)?;
+      // Create file - Convert from `scss` to `css` with `grass`
+      fs::write(
+        format!("./{parent}/{path}.css"),
+        grass::from_string(content.to_string(), &grass::Options::default())?,
+      )?;
     }
 
     // Copy public files
@@ -255,33 +236,70 @@ impl App {
       }
     }
 
-    Ok(self)
-  }
-
-  /// Create folder recursively
-  // ? Move to super ?
-  fn create_dir_all_safe(parent: &str, child: &str) -> AppResult<()> {
-    let folders = child.split("/").collect::<Vec<_>>();
-    for i in 1..folders.len() {
-      let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));
-      // Check if exists, create if not
-      if !Path::new(&path).exists() {
-        fs::create_dir(path)?;
-      }
+    if self.is_dev {
+      Self::listen();
     }
 
-    Ok(())
+    Ok(self)
   }
 
-  /// Open development server and listen
-  pub fn listen(&mut self) -> AppResult<&mut Self> {
-    // todo!();
-    Ok(self)
+  /// Open local server and listen
+  fn listen() {
+    //TODO Listen here
   }
 }
 
+/// Recursively read files from tree directory.
+/// `templates`: Mutable borrow to hashmap
+/// `parent`: Directory to collate all templates
+/// `child`: Path of subdirectories (not including `parent`)
+fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
+  // Full path, relative to workspace, of directory
+  let dir_path = format!("./{parent}/{child}");
+
+  // Loop files in directory
+  for file in fs::read_dir(dir_path)?.flatten() {
+    if let Some(path) = file.path().to_str() {
+      let path = path.replace("\\", "/");
+      if let Some(name) = file.file_name().to_str() {
+        // Only include first slash if child directory is not empty
+        let slash = if child.is_empty() { "" } else { "/" };
+
+        // If is folder
+        if Path::new(&path).is_dir() {
+          // Recurse function
+          load_filemap(map, parent, &format!("{child}{slash}{name}",))?;
+        } else {
+          // Add to templates
+          let content = fs::read_to_string(file.path())?;
+          // Get file name without extension
+          if let Some(file_name) = get_file_name(&file) {
+            map.insert(format!("{child}{slash}{file_name}",), content);
+          }
+        }
+      }
+    }
+  }
+
+  Ok(())
+}
+
+/// Create folder recursively
+fn create_dir_all_safe(parent: &str, child: &str) -> AppResult<()> {
+  let folders = child.split("/").collect::<Vec<_>>();
+  for i in 1..folders.len() {
+    let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));
+    // Check if exists, create if not
+    if !Path::new(&path).exists() {
+      fs::create_dir(path)?;
+    }
+  }
+
+  Ok(())
+}
+
 /// Convert `DirEntry` to string and get file name without extension
-pub fn get_file_name(path: &fs::DirEntry) -> Option<String> {
+fn get_file_name(path: &fs::DirEntry) -> Option<String> {
   Some(
     path
       .path()

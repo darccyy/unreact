@@ -10,10 +10,7 @@ fn main() -> unreact::AppResult<()> {
   ];
 
   // Create interface object with default options
-  let mut app = App::new(AppConfig {
-    build: "docs".to_string(),
-    ..Default::default()
-  })?;
+  let mut app = App::new(AppConfig::github_pages(), is_dev())?;
 
   // Create `/index.html` page using `index.hbs` template, test data
   app.index(&app.render("index", &json!({"test": 123, "posts": posts}))?)?;
@@ -38,14 +35,9 @@ fn main() -> unreact::AppResult<()> {
     )?;
   }
 
-  if is_dev() {
-    // Open dev server and listen
-    app.listen()?;
-  } else {
-    // Compile files for production
-    app.finish()?;
-    println!("Compiled successfully.");
-  }
+  // Compile files, host if in dev mode
+  app.finish()?;
+  println!("Compiled successfully.");
 
   Ok(())
 }
