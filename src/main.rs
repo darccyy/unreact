@@ -1,8 +1,8 @@
 use serde_json::json;
 
-use ssg::{App, AppConfig};
+use unreact::{App, AppConfig};
 
-fn main() -> ssg::AppResult<()> {
+fn main() -> unreact::AppResult<()> {
   // Example data for 'dynamic' generation
   let posts = vec![
     ("example", "this is an example", "Monday"),
