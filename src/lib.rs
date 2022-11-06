@@ -3,6 +3,8 @@ mod server;
 
 use std::{collections::HashMap, error::Error, fs, path::Path};
 
+use serde_json::Value;
+
 pub use app::{App, AppConfig};
 
 pub const DEV_BUILD_DIR: &str = ".devbuild";
@@ -107,4 +109,23 @@ fn get_file_name(path: &fs::DirEntry) -> Option<String> {
       .next()?
       .to_owned(),
   )
+}
+
+/// Merge one `serde_json` value with another
+fn merge_json(a: &mut Value, b: Value) {
+  if let Value::Object(a) = a {
+    if let Value::Object(b) = b {
+      for (k, v) in b {
+        if v.is_null() {
+          a.remove(&k);
+        } else {
+          merge_json(a.entry(k).or_insert(Value::Null), v);
+        }
+      }
+
+      return;
+    }
+  }
+
+  *a = b;
 }

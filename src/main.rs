@@ -14,6 +14,9 @@ fn main() -> unreact::AppResult<()> {
   // Create interface object with default options
   let mut app = App::new(AppConfig::github_pages(), is_dev(), URL)?;
 
+  // Register global variables
+  app.set_globals(json!({"my_global": ":) hello from global!"}))?;
+
   // Create `/index.html` page using `index.hbs` template, test data
   app.index("index", &json!({"test": 123, "posts": posts}))?;
 

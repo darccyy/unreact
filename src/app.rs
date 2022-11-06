@@ -4,7 +4,8 @@ use handlebars::Handlebars;
 use serde_json::Value;
 
 use crate::{
-  create_dir_all_safe, load_filemap, server, AppError, AppResult, File, FileMap, DEV_BUILD_DIR,
+  create_dir_all_safe, load_filemap, merge_json, server, AppError, AppResult, File, FileMap,
+  DEV_BUILD_DIR,
 };
 
 /// Config for directories and options
@@ -57,6 +58,8 @@ pub struct App {
   pub is_dev: bool,
   /// URL of production server
   pub url: String,
+  /// Global variables
+  pub globals: Value,
 }
 
 impl App {
@@ -87,6 +90,7 @@ impl App {
       config,
       is_dev,
       url: url.to_string(),
+      globals: Value::Null,
     })
   }
 
@@ -133,6 +137,11 @@ impl App {
     let mut styles = FileMap::new();
     load_filemap(&mut styles, &config.styles, "")?;
     Ok(styles)
+  }
+
+  pub fn set_globals(&mut self, data: Value) -> AppResult<&mut Self> {
+    self.globals = data;
+    Ok(self)
   }
 
   /// Render a template with data
@@ -185,8 +194,14 @@ impl App {
       "#,
     )?;
 
+    // ? Remove `.clone` (2x) ?
+    let mut data = data.clone();
+    if !self.globals.is_null() {
+      merge_json(&mut data, self.globals.clone());
+    }
+
     // Render template
-    Ok(reg.render_template(template, data)?)
+    Ok(reg.render_template(template, &data)?)
   }
 
   /// Register new page (file) with any path, with template
