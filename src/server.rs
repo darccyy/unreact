@@ -82,8 +82,17 @@ fn get_best_possible_file(path: &str) -> Option<String> {
     let file = &format!("./{DEV_BUILD_DIR}/{file}");
     // If file exists, and not directory
     if Path::new(file).is_file() {
-      // Return body using contents of that file
-      return Some(fs::read_to_string(file).expect(&format!("Could not read file '{}'", file)));
+      // Check if file is UTF-8
+      if let Ok(s) =
+        String::from_utf8(fs::read(file).expect(&format!("Could not read file '{file}'")))
+      {
+        // Return body using contents of that file
+        return Some(s);
+      } else {
+        // If not UTF-8, return None
+        // ? How to return images ? idk ?
+        return None;
+      }
     }
   }
 
