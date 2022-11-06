@@ -1,6 +1,6 @@
 # TODO
 
-- Add option to disable dev-server warning
+- Minify html, css files
 
 ## Maybe?
 

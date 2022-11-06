@@ -60,6 +60,8 @@ pub struct App {
   pub url: String,
   /// Global variables
   pub globals: Value,
+  /// If warning is sent in dev mode
+  dev_warning: bool,
 }
 
 impl App {
@@ -91,6 +93,7 @@ impl App {
       is_dev,
       url: url.to_string(),
       globals: Value::Null,
+      dev_warning: true, // Default to true
     })
   }
 
@@ -176,7 +179,8 @@ impl App {
       },
     )?;
     // Script for development
-    if self.is_dev {
+    // Is not registered if `self.dev_warning` is false
+    if self.is_dev && self.dev_warning {
       reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
     }
     // Simple link
@@ -281,5 +285,11 @@ impl App {
   /// Open local server and listen
   fn listen() {
     server::listen();
+  }
+
+  /// Disable / enable dev-build warning in development mode
+  pub fn set_dev_warning(&mut self, value: bool) -> &mut Self {
+    self.dev_warning = value;
+    self
   }
 }
