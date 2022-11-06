@@ -9,6 +9,13 @@ use crate::DEV_BUILD_DIR;
 /// Local address with port to host dev server
 pub const ADDRESS: &str = "127.0.0.1:8080";
 
+/// Partial for hot reloading document in development
+pub const DEV_SCRIPT: &str = r#"
+  <script>
+    console.warn("This document is in *development mode*");
+  </script>
+"#;
+
 /// Create server and listen on local port
 ///
 /// **Warning:** only supports valid UTF-8 files -

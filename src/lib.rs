@@ -195,7 +195,7 @@ impl App {
     }
 
     // Register default partials
-    //TODO Change for production mode
+    // Base url for site
     reg.register_partial(
       "URL",
       if self.is_dev {
@@ -204,6 +204,10 @@ impl App {
         self.url.to_string()
       },
     )?;
+    // Script for development
+    if self.is_dev {
+      reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
+    }
 
     // Render template
     Ok(reg.render_template(template, data)?)
