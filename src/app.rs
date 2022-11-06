@@ -266,14 +266,10 @@ impl App {
     }
 
     // Copy public files
-    for file in fs::read_dir(format!("./{}", &self.config.public))?.flatten() {
-      if let Some(name) = file.file_name().to_str() {
-        fs::copy(
-          file.path(),
-          format!("./{}/public/{}", self.config.build, name),
-        )?;
-      }
-    }
+    dircpy::copy_dir(
+      format!("./{}", &self.config.public),
+      format!("./{}/public", self.config.build),
+    )?;
 
     if self.is_dev {
       Self::listen();

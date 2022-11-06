@@ -1,7 +1,5 @@
 # TODO
 
-- Add nesting to public folder (below)
-- Switch directory recursion to `walkdir` crate ?
 - Add option to disable dev-server warning
 
 ## Maybe?
