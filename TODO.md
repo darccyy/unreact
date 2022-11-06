@@ -6,6 +6,7 @@
 ## Maybe?
 
 - Option to include `.html` and `/index.html` in links?
+- Add dev server auto reloader with websocket ?
 
 ## Later...
 

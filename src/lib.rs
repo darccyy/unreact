@@ -28,8 +28,9 @@ impl std::fmt::Display for AppError {
 }
 
 /// File object
+// ? Make public ?
 #[derive(Debug)]
-pub struct File {
+struct File {
   path: String,
   content: String,
 }

@@ -54,7 +54,7 @@ pub struct App {
   pages: Vec<File>,
   /// Whether app should compile in dev mode
   ///
-  /// If true, localhost server will be opened
+  /// If true, localhost server will be created
   pub is_dev: bool,
   /// URL of production server
   pub url: String,
