@@ -170,9 +170,13 @@ impl App {
     if self.is_dev {
       reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
     }
-
-    // Register helpers
-    // Link
+    // Simple link
+    reg.register_partial(
+      "LINK",
+      r#"
+      <a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>
+    "#,
+    )?;
 
     // Render template
     Ok(reg.render_template(template, data)?)
