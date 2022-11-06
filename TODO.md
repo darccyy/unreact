@@ -1,6 +1,6 @@
 # TODO
 
-- Minify html, css files
+*None*
 
 ## Maybe?
 

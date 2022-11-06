@@ -12,13 +12,29 @@ use crate::{
 #[derive(Debug)]
 pub struct AppConfig {
   /// Directory of output files
+  ///
+  /// Default: `"build"`, or `"docs"` with `AppConfig::github_pages()`
   pub build: String,
   /// Directory of templates and partials (`.hbs`)
+  ///
+  /// Default: "templates"
   pub templates: String,
   /// Directory of static public assets, such as images
+  ///
+  /// Default: "public"
   pub public: String,
   /// Directory of styles (`.scss`)
+  ///
+  /// Default: "styles"
   pub styles: String,
+  /// If warning is sent in dev mode
+  ///
+  /// Default: true
+  pub dev_warning: bool,
+  /// If `html` and `css` files are minified in build
+  ///
+  /// Default: true
+  pub minify: bool,
 }
 
 impl Default for AppConfig {
@@ -28,6 +44,8 @@ impl Default for AppConfig {
       templates: "templates".to_string(),
       public: "public".to_string(),
       styles: "styles".to_string(),
+      dev_warning: true,
+      minify: true,
     }
   }
 }
@@ -60,8 +78,6 @@ pub struct App {
   pub url: String,
   /// Global variables
   pub globals: Value,
-  /// If warning is sent in dev mode
-  dev_warning: bool,
 }
 
 impl App {
@@ -74,7 +90,7 @@ impl App {
       {
         AppConfig {
           build: DEV_BUILD_DIR.to_string(),
-          ..Default::default()
+          ..config
         }
       }
     } else {
@@ -93,7 +109,6 @@ impl App {
       is_dev,
       url: url.to_string(),
       globals: Value::Null,
-      dev_warning: true, // Default to true
     })
   }
 
@@ -179,8 +194,8 @@ impl App {
       },
     )?;
     // Script for development
-    // Is not registered if `self.dev_warning` is false
-    if self.is_dev && self.dev_warning {
+    // Is not registered if `dev_warning` in config is false
+    if self.is_dev && self.config.dev_warning {
       reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
     }
     // Simple link
@@ -253,8 +268,27 @@ impl App {
       let parent = &self.config.build;
       // Create folder recursively
       create_dir_all_safe(parent, &file.path)?;
+
+      // Minify if enabled
+      let output = if self.config.minify {
+        // Minified html
+        use minify_html::{minify, Cfg};
+        String::from_utf8_lossy(&minify(
+          &file.content.as_bytes(),
+          &Cfg {
+            do_not_minify_doctype: true,
+            keep_comments: true,
+            ..Cfg::default()
+          },
+        ))
+        .to_string()
+      } else {
+        // Un-minified file
+        file.content.to_string()
+      };
+
       // Create file
-      fs::write(format!("./{parent}/{}.html", file.path), &file.content)?;
+      fs::write(format!("./{parent}/{}.html", file.path), &output)?;
     }
 
     // Create styles
@@ -262,11 +296,24 @@ impl App {
       let parent = format!("{}/{}", self.config.build, self.config.styles);
       // Create folder recursively
       create_dir_all_safe(&parent, &path)?;
+
+      // Convert from scss to css
+      let parsed = grass::from_string(content.to_string(), &grass::Options::default())?;
+
+      // Minify if enabled
+      let output = if self.config.minify {
+        // Minified css
+        use css_minify::optimizations::{Level, Minifier};
+        Minifier::default()
+          .minify(&parsed, Level::Two)
+          .expect(&format!("Could not minify css in file '{path}'"))
+      } else {
+        // Un-minified file
+        parsed
+      };
+
       // Create file - Convert from `scss` to `css` with `grass`
-      fs::write(
-        format!("./{parent}/{path}.css"),
-        grass::from_string(content.to_string(), &grass::Options::default())?,
-      )?;
+      fs::write(format!("./{parent}/{path}.css"), output)?;
     }
 
     // Copy public files
@@ -285,11 +332,5 @@ impl App {
   /// Open local server and listen
   fn listen() {
     server::listen();
-  }
-
-  /// Disable / enable dev-build warning in development mode
-  pub fn set_dev_warning(&mut self, value: bool) -> &mut Self {
-    self.dev_warning = value;
-    self
   }
 }

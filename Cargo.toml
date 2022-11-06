@@ -14,3 +14,5 @@ tokio = { version = "1", features = ["full"] }
 http = "0.2.8"
 hyper = { version = "0.14", features = ["full"] }
 dircpy = "0.3.13"
+minify-html = "0.10.3"
+css-minify = "0.2.2"

@@ -12,7 +12,13 @@ fn main() -> unreact::AppResult<()> {
   ];
 
   // Create interface object with default options
-  let mut app = App::new(AppConfig::github_pages(), is_dev(), URL)?;
+  let mut app = App::new(
+    AppConfig {
+      ..AppConfig::github_pages()
+    },
+    is_dev(),
+    URL,
+  )?;
 
   // Register global variables
   app.set_globals(json!({"my_global": ":) hello from global!"}))?;
