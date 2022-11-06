@@ -140,7 +140,8 @@ impl App {
   }
 
   /// Render a template with data
-  pub fn render(&self, name: &str, data: &Value) -> AppResult<String> {
+  // ? Make public ?
+  fn render(&self, name: &str, data: &Value) -> AppResult<String> {
     // Get template string from name
     let template = match self.templates.get(name) {
       Some(s) => s,
@@ -178,22 +179,42 @@ impl App {
     Ok(reg.render_template(template, data)?)
   }
 
-  /// Register new page (file) with any path
-  ///TODO Move `render` function here
-  pub fn page(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
-    self.pages.push(File::new(path, content));
+  /// Register new page (file) with any path, with template
+  ///
+  /// `path`: Output path in build directory, **without** `.html` extension
+  ///
+  /// `template`: Name of template to render
+  ///
+  /// `data`: JSON data to render with (use `serde_json::json!` macro)
+  pub fn page(&mut self, path: &str, template: &str, data: &Value) -> AppResult<&mut Self> {
+    self
+      .pages
+      .push(File::new(path, &self.render(template, data)?));
+    Ok(self)
+  }
 
+  /// Register new page (file) with any path, without template (plain)
+  ///
+  /// `path`: Output path in build directory, **without** `.html` extension
+  ///
+  /// `content`: Raw text content to write to file, without template
+  pub fn page_plain(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
+    self.pages.push(File::new(path, content));
     Ok(self)
   }
 
   /// Register index page (`./index.html`)
-  pub fn index(&mut self, content: &str) -> AppResult<&mut Self> {
-    self.page("index", content)
+  ///
+  /// Alias of `app.page("index", ...)`
+  pub fn index(&mut self, template: &str, data: &Value) -> AppResult<&mut Self> {
+    self.page("index", template, data)
   }
 
-  /// Register 404 not found page (`./404.html`)
-  pub fn not_found(&mut self, content: &str) -> AppResult<&mut Self> {
-    self.page("404", content)
+  /// Register 404 (not found) page (`./404.html`)
+  ///
+  /// Alias of `app.page("404", ...)`
+  pub fn not_found(&mut self, template: &str, data: &Value) -> AppResult<&mut Self> {
+    self.page("404", template, data)
   }
 
   /// Create all files in production mode
@@ -238,7 +259,6 @@ impl App {
 
   /// Open local server and listen
   fn listen() {
-    //TODO Listen here
     server::listen();
   }
 }

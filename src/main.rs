@@ -15,25 +15,29 @@ fn main() -> unreact::AppResult<()> {
   let mut app = App::new(AppConfig::github_pages(), is_dev(), URL)?;
 
   // Create `/index.html` page using `index.hbs` template, test data
-  app.index(&app.render("index", &json!({"test": 123, "posts": posts}))?)?;
+  app.index("index", &json!({"test": 123, "posts": posts}))?;
 
   // Create `/404.html` page using `error/not_found.hbs` template, test data
-  app.not_found(&app.render("error/not_found", &json!({"test": 123}))?)?;
+  app.not_found("error/not_found", &json!({"test": 123}))?;
+
+  // Create a page at `/plain.html` with no template (plain)
+  app.page_plain(
+    "plain",
+    "This was created without a template. <em>This should be italics</em>",
+  )?;
 
   // Create custom page at `/hello.html` using `hello.hbs` template, custom message
-  app.page("hello", &app.render("hello", &json!({"msg": "Hello!"}))?)?;
+  app.page("hello", "hello", &json!({"msg": "Hello!"}))?;
   // Create custom page at `/hello/again.html` using `hello.hbs` template, different custom message
-  app.page(
-    "hello/again",
-    &app.render("hello", &json!({"msg": "Hello again!"}))?,
-  )?;
+  app.page("hello/again", "hello", &json!({"msg": "Hello again!"}))?;
 
   // Loop data
   for (name, content, day) in posts {
     // Each data entry, create page with id, and 'dynamic' content
     app.page(
       &format!("post/{name}"),
-      &app.render("post", &json!({ "content": content, "day": day }))?,
+      "post",
+      &json!({ "content": content, "day": day }),
     )?;
   }
 
