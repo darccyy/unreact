@@ -43,7 +43,7 @@ pub fn listen() {
 
       Ok::<_, hyper::Error>(())
     })
-    .expect("Whoops");
+    .expect("Error in Runtime");
 }
 
 /// Route path to read and return file

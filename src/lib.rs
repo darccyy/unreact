@@ -7,6 +7,7 @@ use serde_json::Value;
 
 pub use app::{App, AppConfig};
 
+/// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
 
 /// Alias of hashmap

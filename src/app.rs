@@ -9,31 +9,43 @@ use crate::{
 };
 
 /// Config for directories and options
+///
+/// Use `AppConfig::default()` for default config
+///
+/// Use `AppConfig::github_pages()` for recommended default for hosting on GitHub Pages (Builds to `./docs`)
 #[derive(Debug)]
 pub struct AppConfig {
-  /// Directory of output files
+  /// Directory of output files - build directory
+  ///
+  /// For production. Temporary folder `./.devbuild` is used in development
   ///
   /// Default: `"build"`, or `"docs"` with `AppConfig::github_pages()`
   pub build: String,
   /// Directory of templates and partials (`.hbs`)
   ///
-  /// Default: "templates"
+  /// Can contain nested files
+  ///
+  /// Default: `"templates"`
   pub templates: String,
   /// Directory of static public assets, such as images
   ///
-  /// Default: "public"
+  /// Can contain nested files
+  ///
+  /// Default: `"public"`
   pub public: String,
   /// Directory of styles (`.scss`)
   ///
-  /// Default: "styles"
+  /// Can contain nested files
+  ///
+  /// Default: `"styles"`
   pub styles: String,
   /// If warning is sent in dev mode
   ///
-  /// Default: true
+  /// Default: `true`
   pub dev_warning: bool,
   /// If `html` and `css` files are minified in build
   ///
-  /// Default: true
+  /// Default: `true`
   pub minify: bool,
 }
 
@@ -51,6 +63,7 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
+  /// Returns recommended default for hosting on GitHub Pages (Builds to `./docs`)
   pub fn github_pages() -> Self {
     AppConfig {
       build: "docs".to_string(),
@@ -60,9 +73,11 @@ impl AppConfig {
 }
 
 /// API interface object
+///
+/// Create with `App::new()`
 #[derive(Debug)]
 pub struct App {
-  /// Config options for app
+  /// Config options for app, see `AppConfig`
   config: AppConfig,
   /// List of templates as file hashmap
   templates: FileMap,
@@ -73,17 +88,19 @@ pub struct App {
   /// Whether app should compile in dev mode
   ///
   /// If true, localhost server will be created
-  pub is_dev: bool,
+  is_dev: bool,
   /// URL of production server
-  pub url: String,
+  url: String,
   /// Global variables
-  pub globals: Value,
+  globals: Value,
 }
 
 impl App {
   /// Create new API interface
   ///
-  /// Use `Default::default()` for default config
+  /// Use `AppConfig::default()` as `config` for default config
+  ///
+  /// Use `AppConfig::github_pages()` as `config` for recommended config for hosting on GitHub Pages default (Builds to `./docs`)
   pub fn new(config: AppConfig, is_dev: bool, url: &str) -> AppResult<Self> {
     // Convert build directory to constant dev build directory if is dev
     let config = if is_dev {
@@ -134,11 +151,12 @@ impl App {
     if Path::new(&format!("./{}", config.build)).exists() {
       fs::remove_dir_all(format!("./{}", config.build))?;
     }
-    // Create new build directory
-    fs::create_dir(format!("./{}", config.build))?;
-    // Create generic subfolders
-    fs::create_dir(format!("./{}/styles", config.build))?;
-    fs::create_dir(format!("./{}/public", config.build))?;
+
+    // Create new build directory and generic subfolders
+    let dirs = vec!["", "/styles", "/public"];
+    for dir in dirs {
+      fs::create_dir(format!("./{}{}", config.build, dir))?;
+    }
 
     Ok(())
   }
@@ -157,6 +175,8 @@ impl App {
     Ok(styles)
   }
 
+  /// Set global variables to new `serde_json::Value`
+  // ? Create getter ?
   pub fn set_globals(&mut self, data: Value) -> AppResult<&mut Self> {
     self.globals = data;
     Ok(self)
@@ -213,7 +233,7 @@ impl App {
       "#,
     )?;
 
-    // ? Remove `.clone` (2x) ?
+    // ? Remove `.clone` (2x) ? how ?
     let mut data = data.clone();
     if !self.globals.is_null() {
       merge_json(&mut data, self.globals.clone());
@@ -322,6 +342,7 @@ impl App {
       format!("./{}/public", self.config.build),
     )?;
 
+    // Open local server if in dev mode
     if self.is_dev {
       Self::listen();
     }
