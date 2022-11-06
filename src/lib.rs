@@ -1,7 +1,11 @@
+mod server;
+
 use std::{collections::HashMap, error::Error, fs, path::Path};
 
 use handlebars::Handlebars;
 use serde_json::Value;
+
+pub const DEV_BUILD_DIR: &str = ".devbuild";
 
 /// Alias of hashmap
 type FileMap = HashMap<String, String>;
@@ -87,26 +91,46 @@ pub struct App {
   /// List of pages as file list
   pages: Vec<File>,
   /// Whether app should compile in dev mode
+  ///
   /// If true, localhost server will be opened
   pub is_dev: bool,
+  /// URL of production server
+  pub url: String,
 }
 
 impl App {
   /// Create new API interface
+  ///
   /// Use `Default::default()` for default config
-  pub fn new(config: AppConfig, is_dev: bool) -> AppResult<Self> {
+  pub fn new(config: AppConfig, is_dev: bool, url: &str) -> AppResult<Self> {
+    // Convert build directory to constant dev build directory if is dev
+    let config = if is_dev {
+      {
+        AppConfig {
+          build: DEV_BUILD_DIR.to_string(),
+          ..Default::default()
+        }
+      }
+    } else {
+      config
+    };
+
+    // Check that directories exists
     Self::check_dirs(&config)?;
 
+    // Create interface
     Ok(App {
       templates: Self::load_templates(&config)?,
       styles: Self::load_styles(&config)?,
       pages: Vec::new(),
       config,
       is_dev,
+      url: url.to_string(),
     })
   }
 
-  /// Returns as error if any value of `config` are not valid directories.
+  /// Returns as error if any value of `config` are not valid directories
+  ///
   /// Creates build directory
   fn check_dirs(config: &AppConfig) -> AppResult<()> {
     // Collate directory names
@@ -174,11 +198,11 @@ impl App {
     //TODO Change for production mode
     reg.register_partial(
       "URL",
-      format!(
-        "file:///{dir}/{build}",
-        dir = std::env::current_dir().unwrap().to_str().unwrap(),
-        build = &self.config.build
-      ),
+      if self.is_dev {
+        format!("http://{}", server::ADDRESS)
+      } else {
+        self.url.to_string()
+      },
     )?;
 
     // Render template
@@ -246,12 +270,16 @@ impl App {
   /// Open local server and listen
   fn listen() {
     //TODO Listen here
+    server::listen();
   }
 }
 
-/// Recursively read files from tree directory.
+/// Recursively read files from tree directory
+///
 /// `templates`: Mutable borrow to hashmap
+///
 /// `parent`: Directory to collate all templates
+///
 /// `child`: Path of subdirectories (not including `parent`)
 fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
   // Full path, relative to workspace, of directory

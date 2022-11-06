@@ -5,8 +5,21 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+#TODO Move some to dev dependencies
 [dependencies]
+futures = "0.1"
 grass = "0.11.2"
 handlebars = "4.3.5"
-serde = "1.0.147"
+hyper = { version = "0.14", features = ["full"] }
+# hyper = "0.12"
+hyper-staticfile = "0.9.1"
+serde = "1.0.139"
 serde_json = "1.0.87"
+just = "1.8.0"
+futures-util = "0.3.25"
+http = "0.2.8"
+tokio = { version = "1", features = ["full"] }
+
+# tokio = "1.21.2"
+warp = "0.3.3"
+# warp = "0.3"

@@ -2,6 +2,8 @@ use serde_json::json;
 
 use unreact::{App, AppConfig};
 
+const URL: &str = "https://darccyy.github.io/unreact";
+
 fn main() -> unreact::AppResult<()> {
   // Example data for 'dynamic' generation
   let posts = vec![
@@ -10,7 +12,7 @@ fn main() -> unreact::AppResult<()> {
   ];
 
   // Create interface object with default options
-  let mut app = App::new(AppConfig::github_pages(), is_dev())?;
+  let mut app = App::new(AppConfig::github_pages(), is_dev(), URL)?;
 
   // Create `/index.html` page using `index.hbs` template, test data
   app.index(&app.render("index", &json!({"test": 123, "posts": posts}))?)?;
