@@ -6,5 +6,6 @@
 - Add nesting to public folder (below)
 - Switch directory recursion to `walkdir` crate ?
 
-<!-- - put `app.render` functionality into `app.page` -->
-<!-- - Remove `.html` and `/index.html` for dev mode -->
+## Maybe?
+
+- Option to include `.html` and `/index.html` in links?

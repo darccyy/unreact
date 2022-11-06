@@ -18,8 +18,6 @@ pub struct AppConfig {
   pub public: String,
   /// Directory of styles (`.scss`)
   pub styles: String,
-  /// If links between documents should include `.html` and `/index.html`
-  pub _include_extension: bool,
 }
 
 impl Default for AppConfig {
@@ -29,7 +27,6 @@ impl Default for AppConfig {
       templates: "templates".to_string(),
       public: "public".to_string(),
       styles: "styles".to_string(),
-      _include_extension: true,
     }
   }
 }
@@ -38,7 +35,6 @@ impl AppConfig {
   pub fn github_pages() -> Self {
     AppConfig {
       build: "docs".to_string(),
-      _include_extension: false,
       ..Default::default()
     }
   }
@@ -174,6 +170,9 @@ impl App {
     if self.is_dev {
       reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
     }
+
+    // Register helpers
+    // Link
 
     // Render template
     Ok(reg.render_template(template, data)?)

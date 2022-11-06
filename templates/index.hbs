@@ -11,21 +11,23 @@ My partial: {{>partials/my_partial}}
 
 <div>
   <h2>Links</h2>
-  <a href="./hello.html">Hello!</a>
+  <a href="./hello">Hello!</a>
   <br />
-  <a href="./hello/again.html">Hello again!</a>
+  <a href="./hello/again">Hello again!</a>
   <hr />
 
   <h2>Posts</h2>
   {{#each posts}}
   {{#with this}}
-  <a href="./post/{{[0]}}.html">{{[1]}}</a> - <em>from {{[2]}}</em>
+  <a href="./post/{{[0]}}">{{[1]}}</a> - <em>from {{[2]}}</em>
   <br />
   {{/with}}
   {{/each}}
   <hr />
 
-  <a href="{{>URL}}/plain.html">Page without template</a>
+  <a href="{{>URL}}/plain">Page without template</a>
+
+
 </div>
 
 Here is an image:
