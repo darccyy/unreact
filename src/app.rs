@@ -156,7 +156,7 @@ impl App {
       reg.register_partial(k, v)?;
     }
 
-    // Register default partials
+    // Register inbuilt partials
     // Base url for site
     reg.register_partial(
       "URL",
@@ -174,8 +174,15 @@ impl App {
     reg.register_partial(
       "LINK",
       r#"
-      <a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>
-    "#,
+        <a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>
+      "#,
+    )?;
+    // Simple style tag
+    reg.register_partial(
+      "STYLE",
+      r#"
+        <link rel="stylesheet" href="{{>URL}}/styles/{{name}}" />
+      "#,
     )?;
 
     // Render template
