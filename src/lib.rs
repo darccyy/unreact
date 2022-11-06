@@ -5,7 +5,7 @@ use std::{collections::HashMap, error::Error, fs, path::Path};
 
 use serde_json::Value;
 
-pub use app::{App, AppConfig};
+pub use app::{Unreact, Config};
 
 /// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
@@ -14,15 +14,15 @@ pub const DEV_BUILD_DIR: &str = ".devbuild";
 type FileMap = HashMap<String, String>;
 
 /// Alias of common result type
-pub type AppResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub type UnreactResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 /// Custom error message for this module
 ///TODO Make better !!!
 #[derive(Debug)]
-pub struct AppError(String);
+pub struct UnreactError(String);
 
-impl Error for AppError {}
-impl std::fmt::Display for AppError {
+impl Error for UnreactError {}
+impl std::fmt::Display for UnreactError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "ERROR <{}>", self.0)
   }
@@ -53,7 +53,7 @@ impl File {
 /// `parent`: Directory to collate all templates
 ///
 /// `child`: Path of subdirectories (not including `parent`)
-fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
+fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<()> {
   // Full path, relative to workspace, of directory
   let dir_path = format!("./{parent}/{child}");
 
@@ -85,7 +85,7 @@ fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> AppResult<()> {
 }
 
 /// Create folder recursively
-fn create_dir_all_safe(parent: &str, child: &str) -> AppResult<()> {
+fn create_dir_all_safe(parent: &str, child: &str) -> UnreactResult<()> {
   let folders = child.split("/").collect::<Vec<_>>();
   for i in 1..folders.len() {
     let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));

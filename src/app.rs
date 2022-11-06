@@ -4,22 +4,22 @@ use handlebars::Handlebars;
 use serde_json::Value;
 
 use crate::{
-  create_dir_all_safe, load_filemap, merge_json, server, AppError, AppResult, File, FileMap,
+  create_dir_all_safe, load_filemap, merge_json, server, UnreactError, UnreactResult, File, FileMap,
   DEV_BUILD_DIR,
 };
 
 /// Config for directories and options
 ///
-/// Use `AppConfig::default()` for default config
+/// Use `Config::default()` for default config
 ///
-/// Use `AppConfig::github_pages()` for recommended default for hosting on GitHub Pages (Builds to `./docs`)
+/// Use `Config::github_pages()` for recommended default for hosting on GitHub Pages (Builds to `./docs`)
 #[derive(Debug)]
-pub struct AppConfig {
+pub struct Config {
   /// Directory of output files - build directory
   ///
   /// For production. Temporary folder `./.devbuild` is used in development
   ///
-  /// Default: `"build"`, or `"docs"` with `AppConfig::github_pages()`
+  /// Default: `"build"`, or `"docs"` with `Config::github_pages()`
   pub build: String,
   /// Directory of templates and partials (`.hbs`)
   ///
@@ -49,9 +49,9 @@ pub struct AppConfig {
   pub minify: bool,
 }
 
-impl Default for AppConfig {
+impl Default for Config {
   fn default() -> Self {
-    AppConfig {
+    Config {
       build: "build".to_string(),
       templates: "templates".to_string(),
       public: "public".to_string(),
@@ -62,10 +62,10 @@ impl Default for AppConfig {
   }
 }
 
-impl AppConfig {
+impl Config {
   /// Returns recommended default for hosting on GitHub Pages (Builds to `./docs`)
   pub fn github_pages() -> Self {
-    AppConfig {
+    Config {
       build: "docs".to_string(),
       ..Default::default()
     }
@@ -74,11 +74,11 @@ impl AppConfig {
 
 /// API interface object
 ///
-/// Create with `App::new()`
+/// Create with `Unreact::new()`
 #[derive(Debug)]
-pub struct App {
-  /// Config options for app, see `AppConfig`
-  config: AppConfig,
+pub struct Unreact {
+  /// Config options for app, see `Config`
+  config: Config,
   /// List of templates as file hashmap
   templates: FileMap,
   /// List of styles as file hashmap
@@ -95,17 +95,17 @@ pub struct App {
   globals: Value,
 }
 
-impl App {
+impl Unreact {
   /// Create new API interface
   ///
-  /// Use `AppConfig::default()` as `config` for default config
+  /// Use `Config::default()` as `config` for default config
   ///
-  /// Use `AppConfig::github_pages()` as `config` for recommended config for hosting on GitHub Pages default (Builds to `./docs`)
-  pub fn new(config: AppConfig, is_dev: bool, url: &str) -> AppResult<Self> {
+  /// Use `Config::github_pages()` as `config` for recommended config for hosting on GitHub Pages default (Builds to `./docs`)
+  pub fn new(config: Config, is_dev: bool, url: &str) -> UnreactResult<Self> {
     // Convert build directory to constant dev build directory if is dev
     let config = if is_dev {
       {
-        AppConfig {
+        Config {
           build: DEV_BUILD_DIR.to_string(),
           ..config
         }
@@ -118,7 +118,7 @@ impl App {
     Self::check_dirs(&config)?;
 
     // Create interface
-    Ok(App {
+    Ok(Unreact {
       templates: Self::load_templates(&config)?,
       styles: Self::load_styles(&config)?,
       pages: Vec::new(),
@@ -132,7 +132,7 @@ impl App {
   /// Returns as error if any value of `config` are not valid directories
   ///
   /// Creates build directory
-  fn check_dirs(config: &AppConfig) -> AppResult<()> {
+  fn check_dirs(config: &Config) -> UnreactResult<()> {
     // Collate directory names
     let dirs = vec![&config.templates, &config.public, &config.styles];
 
@@ -141,7 +141,7 @@ impl App {
       // Check if directory exists
       let path = Path::new(dir);
       if !path.is_dir() {
-        return Err(Box::new(AppError(format!(
+        return Err(Box::new(UnreactError(format!(
           "Directory `{dir}` does not exist"
         ))));
       }
@@ -162,14 +162,14 @@ impl App {
   }
 
   /// Load all templates in directory of `templates` property in `config`
-  fn load_templates(config: &AppConfig) -> AppResult<FileMap> {
+  fn load_templates(config: &Config) -> UnreactResult<FileMap> {
     let mut templates = FileMap::new();
     load_filemap(&mut templates, &config.templates, "")?;
     Ok(templates)
   }
 
   /// Import all scss files in directory of `styles` property in `config`
-  fn load_styles(config: &AppConfig) -> AppResult<FileMap> {
+  fn load_styles(config: &Config) -> UnreactResult<FileMap> {
     let mut styles = FileMap::new();
     load_filemap(&mut styles, &config.styles, "")?;
     Ok(styles)
@@ -177,19 +177,19 @@ impl App {
 
   /// Set global variables to new `serde_json::Value`
   // ? Create getter ?
-  pub fn set_globals(&mut self, data: Value) -> AppResult<&mut Self> {
+  pub fn set_globals(&mut self, data: Value) -> UnreactResult<&mut Self> {
     self.globals = data;
     Ok(self)
   }
 
   /// Render a template with data
   // ? Make public ?
-  fn render(&self, name: &str, data: &Value) -> AppResult<String> {
+  fn render(&self, name: &str, data: &Value) -> UnreactResult<String> {
     // Get template string from name
     let template = match self.templates.get(name) {
       Some(s) => s,
       None => {
-        return Err(Box::new(AppError(format!(
+        return Err(Box::new(UnreactError(format!(
           "Could not find template '{name}'"
         ))))
       }
@@ -250,7 +250,7 @@ impl App {
   /// `template`: Name of template to render
   ///
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
-  pub fn page(&mut self, path: &str, template: &str, data: &Value) -> AppResult<&mut Self> {
+  pub fn page(&mut self, path: &str, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self
       .pages
       .push(File::new(path, &self.render(template, data)?));
@@ -262,7 +262,7 @@ impl App {
   /// `path`: Output path in build directory, **without** `.html` extension
   ///
   /// `content`: Raw text content to write to file, without template
-  pub fn page_plain(&mut self, path: &str, content: &str) -> AppResult<&mut Self> {
+  pub fn page_plain(&mut self, path: &str, content: &str) -> UnreactResult<&mut Self> {
     self.pages.push(File::new(path, content));
     Ok(self)
   }
@@ -270,19 +270,19 @@ impl App {
   /// Register index page (`./index.html`)
   ///
   /// Alias of `app.page("index", ...)`
-  pub fn index(&mut self, template: &str, data: &Value) -> AppResult<&mut Self> {
+  pub fn index(&mut self, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self.page("index", template, data)
   }
 
   /// Register 404 (not found) page (`./404.html`)
   ///
   /// Alias of `app.page("404", ...)`
-  pub fn not_found(&mut self, template: &str, data: &Value) -> AppResult<&mut Self> {
+  pub fn not_found(&mut self, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self.page("404", template, data)
   }
 
   /// Create all files in production mode
-  pub fn finish(&mut self) -> AppResult<&mut Self> {
+  pub fn finish(&mut self) -> UnreactResult<&mut Self> {
     // Create pages
     for file in &self.pages {
       let parent = &self.config.build;

@@ -1,10 +1,10 @@
 use serde_json::json;
 
-use unreact::{App, AppConfig};
+use unreact::{Unreact, Config};
 
 const URL: &str = "https://darccyy.github.io/unreact";
 
-fn main() -> unreact::AppResult<()> {
+fn main() -> unreact::UnreactResult<()> {
   // Example data for 'dynamic' generation
   let posts = vec![
     ("example", "this is an example", "Monday"),
@@ -12,9 +12,9 @@ fn main() -> unreact::AppResult<()> {
   ];
 
   // Create interface object with default options
-  let mut app = App::new(
-    AppConfig {
-      ..AppConfig::github_pages()
+  let mut app = Unreact::new(
+    Config {
+      ..Config::github_pages()
     },
     is_dev(),
     URL,
