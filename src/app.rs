@@ -190,7 +190,7 @@ impl App {
     reg.register_partial(
       "STYLE",
       r#"
-        <link rel="stylesheet" href="{{>URL}}/styles/{{name}}" />
+        <link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />
       "#,
     )?;
 
