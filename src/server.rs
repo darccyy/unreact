@@ -6,6 +6,9 @@ use hyper::{Body, Request, Response, Server};
 
 use crate::DEV_BUILD_DIR;
 
+//TODO Make better!!!
+pub type ServerError = String;
+
 /// Local address with port to host dev server
 pub const ADDRESS: &str = "127.0.0.1:8080";
 

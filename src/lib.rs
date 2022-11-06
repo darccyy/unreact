@@ -1,50 +1,16 @@
 mod app;
 mod server;
+mod types;
 
-use std::{collections::HashMap, error::Error, fs, path::Path};
+use std::{fs, path::Path};
 
 use serde_json::Value;
 
-pub use app::{Unreact, Config};
+pub use app::{Config, Unreact};
+pub use types::{UnreactError, UnreactResult, FileMap, File};
 
 /// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
-
-/// Alias of hashmap
-type FileMap = HashMap<String, String>;
-
-/// Alias of common result type
-pub type UnreactResult<T> = Result<T, Box<dyn std::error::Error>>;
-
-/// Custom error message for this module
-///TODO Make better !!!
-#[derive(Debug)]
-pub struct UnreactError(String);
-
-impl Error for UnreactError {}
-impl std::fmt::Display for UnreactError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "ERROR <{}>", self.0)
-  }
-}
-
-/// File object
-// ? Make public ?
-#[derive(Debug)]
-struct File {
-  path: String,
-  content: String,
-}
-
-impl File {
-  /// Create new `File` struct
-  pub fn new(path: &str, content: &str) -> Self {
-    File {
-      path: path.to_string(),
-      content: content.to_string(),
-    }
-  }
-}
 
 /// Recursively read files from tree directory
 ///
@@ -53,12 +19,21 @@ impl File {
 /// `parent`: Directory to collate all templates
 ///
 /// `child`: Path of subdirectories (not including `parent`)
+// ? Change to `std::io::Result` ?
 fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<()> {
   // Full path, relative to workspace, of directory
   let dir_path = format!("./{parent}/{child}");
 
+  // Read directory
+  // ? Remove clone ?
+  let dir_path_clone = dir_path.clone();
+  let dir = match fs::read_dir(dir_path) {
+    Ok(x) => x,
+    Err(_) => return Err(UnreactError::ReadDirFail(dir_path_clone)),
+  };
+
   // Loop files in directory
-  for file in fs::read_dir(dir_path)?.flatten() {
+  for file in dir.flatten() {
     if let Some(path) = file.path().to_str() {
       let path = path.replace("\\", "/");
       if let Some(name) = file.file_name().to_str() {
@@ -71,7 +46,20 @@ fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<(
           load_filemap(map, parent, &format!("{child}{slash}{name}",))?;
         } else {
           // Add to templates
-          let content = fs::read_to_string(file.path())?;
+          let content = match fs::read_to_string(file.path()) {
+            Ok(x) => x,
+            Err(_) => {
+              return Err(UnreactError::ReadDirFail(
+                file
+                  .path()
+                  .to_str()
+                  //TODO Handle
+                  .expect("Could not convert path to string")
+                  .to_string(),
+              ));
+            }
+          };
+
           // Get file name without extension
           if let Some(file_name) = get_file_name(&file) {
             map.insert(format!("{child}{slash}{file_name}",), content);
@@ -91,7 +79,13 @@ fn create_dir_all_safe(parent: &str, child: &str) -> UnreactResult<()> {
     let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));
     // Check if exists, create if not
     if !Path::new(&path).exists() {
-      fs::create_dir(path)?;
+      if let Err(_) = fs::create_dir(path) {
+        return Err(UnreactError::CreateDirFail(format!(
+          "./{}/{}",
+          parent,
+          folders.get(0..i).unwrap().join("/")
+        )));
+      }
     }
   }
 

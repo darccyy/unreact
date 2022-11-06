@@ -21,7 +21,7 @@ fn main() -> unreact::UnreactResult<()> {
   )?;
 
   // Register global variables
-  app.set_globals(json!({"my_global": ":) hello from global!"}))?;
+  app.set_globals(json!({"my_global": ":) hello from global!"}));
 
   // Create `/index.html` page using `index.hbs` template, test data
   app.index("index", &json!({"test": 123, "posts": posts}))?;
@@ -33,7 +33,7 @@ fn main() -> unreact::UnreactResult<()> {
   app.page_plain(
     "plain",
     "This was created without a template. <em>This should be italics</em>",
-  )?;
+  );
 
   // Create custom page at `/hello.html` using `hello.hbs` template, custom message
   app.page("hello", "hello", &json!({"msg": "Hello!"}))?;

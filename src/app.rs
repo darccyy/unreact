@@ -4,8 +4,8 @@ use handlebars::Handlebars;
 use serde_json::Value;
 
 use crate::{
-  create_dir_all_safe, load_filemap, merge_json, server, UnreactError, UnreactResult, File, FileMap,
-  DEV_BUILD_DIR,
+  create_dir_all_safe, load_filemap, merge_json, server, File, FileMap, UnreactError,
+  UnreactResult, DEV_BUILD_DIR,
 };
 
 /// Config for directories and options
@@ -141,21 +141,26 @@ impl Unreact {
       // Check if directory exists
       let path = Path::new(dir);
       if !path.is_dir() {
-        return Err(Box::new(UnreactError(format!(
-          "Directory `{dir}` does not exist"
-        ))));
+        // return Err(Box::new(UnreactErrorOld(format!(
+        //   "Directory `{dir}` does not exist"
+        // ))));
+        return Err(UnreactError::DirNotExist(dir.to_string()));
       }
     }
 
     // Remove build directory if exists
     if Path::new(&format!("./{}", config.build)).exists() {
-      fs::remove_dir_all(format!("./{}", config.build))?;
+      if let Err(_) = fs::remove_dir_all(format!("./{}", config.build)) {
+        return Err(UnreactError::RemoveDirFail(config.build.to_string()));
+      };
     }
 
     // Create new build directory and generic subfolders
     let dirs = vec!["", "/styles", "/public"];
     for dir in dirs {
-      fs::create_dir(format!("./{}{}", config.build, dir))?;
+      if let Err(_) = fs::create_dir(format!("./{}{}", config.build, dir)) {
+        return Err(UnreactError::CreateDirFail(config.build.to_string()));
+      }
     }
 
     Ok(())
@@ -177,9 +182,9 @@ impl Unreact {
 
   /// Set global variables to new `serde_json::Value`
   // ? Create getter ?
-  pub fn set_globals(&mut self, data: Value) -> UnreactResult<&mut Self> {
+  pub fn set_globals(&mut self, data: Value) -> &mut Self {
     self.globals = data;
-    Ok(self)
+    self
   }
 
   /// Render a template with data
@@ -188,11 +193,7 @@ impl Unreact {
     // Get template string from name
     let template = match self.templates.get(name) {
       Some(s) => s,
-      None => {
-        return Err(Box::new(UnreactError(format!(
-          "Could not find template '{name}'"
-        ))))
-      }
+      None => return Err(UnreactError::TemplateNotExist(name.to_string())),
     };
 
     // Create handlebars registry
@@ -200,38 +201,49 @@ impl Unreact {
 
     // Register all other templates as partials
     for (k, v) in &self.templates {
-      reg.register_partial(k, v)?;
+      if let Err(_) = reg.register_partial(k, v) {
+        return Err(UnreactError::RegisterPartialFail(k.to_string()));
+      }
     }
 
     // Register inbuilt partials
-    // Base url for site
-    reg.register_partial(
-      "URL",
-      if self.is_dev {
-        format!("http://{}", server::ADDRESS)
-      } else {
-        self.url.to_string()
-      },
-    )?;
-    // Script for development
-    // Is not registered if `dev_warning` in config is false
-    if self.is_dev && self.config.dev_warning {
-      reg.register_partial("DEV_SCRIPT", server::DEV_SCRIPT)?;
+    let parts: Vec<(&str, String)> = vec![
+      (
+        // Base url for site
+        "URL",
+        if self.is_dev {
+          format!("http://{}", server::ADDRESS)
+        } else {
+          self.url.to_string()
+        },
+      ),
+      // Script for development
+      // Is not registered if `dev_warning` in config is false
+      (
+        "DEV_SCRIPT",
+        if self.is_dev && self.config.dev_warning {
+          server::DEV_SCRIPT.to_string()
+        } else {
+          "".to_string()
+        },
+      ),
+      // Simple link
+      (
+        "LINK",
+        r#"<a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>"#.to_string(),
+      ),
+      // Simple style tag
+      (
+        "STYLE",
+        r#"<link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />"#.to_string(),
+      ),
+    ];
+
+    for (name, part) in parts {
+      if let Err(_) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterPartialFail(name.to_string()));
+      }
     }
-    // Simple link
-    reg.register_partial(
-      "LINK",
-      r#"
-        <a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>
-      "#,
-    )?;
-    // Simple style tag
-    reg.register_partial(
-      "STYLE",
-      r#"
-        <link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />
-      "#,
-    )?;
 
     // ? Remove `.clone` (2x) ? how ?
     let mut data = data.clone();
@@ -240,7 +252,20 @@ impl Unreact {
     }
 
     // Render template
-    Ok(reg.render_template(template, &data)?)
+    match reg.render_template(template, &data) {
+      Ok(x) => Ok(x),
+      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
+    }
+  }
+
+  /// Register new page (file) with any path, without template (plain)
+  ///
+  /// `path`: Output path in build directory, **without** `.html` extension
+  ///
+  /// `content`: Raw text content to write to file, without template
+  pub fn page_plain(&mut self, path: &str, content: &str) -> &mut Self {
+    self.pages.push(File::new(path, content));
+    self
   }
 
   /// Register new page (file) with any path, with template
@@ -251,19 +276,7 @@ impl Unreact {
   ///
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
   pub fn page(&mut self, path: &str, template: &str, data: &Value) -> UnreactResult<&mut Self> {
-    self
-      .pages
-      .push(File::new(path, &self.render(template, data)?));
-    Ok(self)
-  }
-
-  /// Register new page (file) with any path, without template (plain)
-  ///
-  /// `path`: Output path in build directory, **without** `.html` extension
-  ///
-  /// `content`: Raw text content to write to file, without template
-  pub fn page_plain(&mut self, path: &str, content: &str) -> UnreactResult<&mut Self> {
-    self.pages.push(File::new(path, content));
+    self.page_plain(path, &self.render(template, data)?);
     Ok(self)
   }
 
@@ -308,7 +321,12 @@ impl Unreact {
       };
 
       // Create file
-      fs::write(format!("./{parent}/{}.html", file.path), &output)?;
+      if let Err(_) = fs::write(format!("./{parent}/{}.html", file.path), &output) {
+        return Err(UnreactError::WriteFileFail(format!(
+          "./{parent}/{}.html",
+          file.path
+        )));
+      }
     }
 
     // Create styles
@@ -318,7 +336,10 @@ impl Unreact {
       create_dir_all_safe(&parent, &path)?;
 
       // Convert from scss to css
-      let parsed = grass::from_string(content.to_string(), &grass::Options::default())?;
+      let parsed = match grass::from_string(content.to_string(), &grass::Options::default()) {
+        Ok(x) => x,
+        Err(_) => return Err(UnreactError::SCSSFail(path.to_string())),
+      };
 
       // Minify if enabled
       let output = if self.config.minify {
@@ -333,14 +354,23 @@ impl Unreact {
       };
 
       // Create file - Convert from `scss` to `css` with `grass`
-      fs::write(format!("./{parent}/{path}.css"), output)?;
+      if let Err(_) = fs::write(format!("./{parent}/{path}.css"), output) {
+        return Err(UnreactError::WriteFileFail(format!(
+          "./{parent}/{path}.css"
+        )));
+      }
     }
 
     // Copy public files
-    dircpy::copy_dir(
+    if let Err(_) = dircpy::copy_dir(
       format!("./{}", &self.config.public),
       format!("./{}/public", self.config.build),
-    )?;
+    ) {
+      return Err(UnreactError::CopyDirFail(format!(
+        "./{}",
+        &self.config.public
+      )));
+    };
 
     // Open local server if in dev mode
     if self.is_dev {
