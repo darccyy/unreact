@@ -1,6 +1,7 @@
 # TODO
 
 - Add issue templates
+- Add examples folder
 
 ## Maybe?
 
