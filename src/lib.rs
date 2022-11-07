@@ -10,9 +10,9 @@ pub use app::{Config, Unreact};
 pub use types::{File, FileMap, UnreactError, UnreactResult};
 
 /// Most useful functions and types
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// use unreact::prelude::*;
 /// ```

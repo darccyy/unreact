@@ -105,8 +105,16 @@ impl Unreact {
   /// # Examples
   ///
   /// ```
-  /// use unreact::prelude;
-  /// let mut app = Unreact::new(Config::default(), false, "https://mysite.com");
+  /// use unreact::prelude::*;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   app.page_plain("index", "This is my site")
+  ///     .finish()?;
+  ///
+  ///   Ok(())
+  /// }
   /// ```
   pub fn new(config: Config, is_dev: bool, url: &str) -> UnreactResult<Self> {
     // Convert build directory to constant dev build directory if is dev
@@ -137,6 +145,21 @@ impl Unreact {
   }
 
   /// Set global variables to new `serde_json::Value`
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  /// use serde_json::json;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   app.set_globals(json!({"my_global": "From global! :)"}));
+  ///
+  ///   Ok(())
+  /// }
+  /// ```
   // ? Create getter ?
   pub fn set_globals(&mut self, data: Value) -> &mut Self {
     self.globals = data;
@@ -148,6 +171,22 @@ impl Unreact {
   /// `path`: Output path in build directory, **without** `.html` extension
   ///
   /// `content`: Raw text content to write to file, without template
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   app.page_plain("index", "This is my site");
+  ///   app.page_plain("path/file", "This file is in ./build/path/file.html");
+  ///
+  ///   app.finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
   pub fn page_plain(&mut self, path: &str, content: &str) -> &mut Self {
     self.pages.push(File::new(path, content));
     self
@@ -160,6 +199,26 @@ impl Unreact {
   /// `template`: Name of template to render
   ///
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  /// use serde_json::{json, Value};
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   // Renders to `./build/help.html`, using `./templates/help_template.hbs`, with no data
+  ///   app.page("help", "help_template", Value::Null);
+  ///
+  ///   // Renders to `./build/path/file.html`, using `./templates/other/template.hbs`, with a custom message
+  ///   app.page("path/file", "other/template", &json!({"msg": "Hello!"}));
+  ///
+  ///   app.finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
   pub fn page(&mut self, path: &str, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self.page_plain(path, &self.render(template, data)?);
     Ok(self)
@@ -168,6 +227,23 @@ impl Unreact {
   /// Register index page (`./index.html`)
   ///
   /// Alias of `app.page("index", ...)`
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  /// use serde_json::{json};
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   // Renders to `./build/index.html`, using `./templates/standard.hbs`, with a custom message
+  ///   app.index("standard", &json!({"msg": "Hello!"}));
+  ///
+  ///   app.finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
   pub fn index(&mut self, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self.page("index", template, data)
   }
@@ -175,11 +251,60 @@ impl Unreact {
   /// Register 404 (not found) page (`./404.html`)
   ///
   /// Alias of `app.page("404", ...)`
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  /// use serde_json::{Value};
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   // Renders to `./build/404.html`, using `./templates/errors/not_found.hbs`, with no data
+  ///   app.not_found("errors/not_found", Value::Null);
+  ///
+  ///   app.finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
   pub fn not_found(&mut self, template: &str, data: &Value) -> UnreactResult<&mut Self> {
     self.page("404", template, data)
   }
 
   /// Create all files in production mode
+  ///
+  /// # Examples
+  ///
+  /// Compiles to `./build`, in production mode
+  /// 
+  /// ```
+  /// use unreact::prelude::*;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   // Note that argument for `is_dev` is `false`
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
+  ///
+  ///   app.page_plain("index", "This is my site, in production")
+  ///     .finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
+  ///
+  /// Compiles to `./.devbuild`, in development mode, and host to `http://127.0.0.1:8080`
+  /// 
+  /// ```
+  /// use unreact::prelude::*;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   // Note that argument for `is_dev` is `true`
+  ///   let mut app = Unreact::new(Config::default(), true, "https://mysite.com")?;
+  ///
+  ///   app.page_plain("index", "This is my site, in development")
+  ///     .finish()?;
+  ///   Ok(())
+  /// }
+  /// ```
   pub fn finish(&mut self) -> UnreactResult<&mut Self> {
     // Create pages
     for file in &self.pages {
