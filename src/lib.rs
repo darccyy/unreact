@@ -23,7 +23,18 @@ pub mod prelude {
 /// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
 
-/// Check if `--dev` or `-d` argument was passed on run
+/// Check if `--dev` or `-d` argument was passed on `cargo run`
+/// 
+/// # Examples
+/// 
+/// ```ps1
+/// # Runs in production mode
+/// cargo run
+/// 
+/// # Runs in development mode
+/// cargo run -- --dev
+/// cargo run -- -d
+/// ```
 pub fn is_dev() -> bool {
   let args = std::env::args().collect::<Vec<_>>();
   args.contains(&"--dev".to_string()) || args.contains(&"-d".to_string())
