@@ -7,7 +7,7 @@ use std::{fs, path::Path};
 use serde_json::Value;
 
 pub use app::{Config, Unreact};
-pub use types::{UnreactError, UnreactResult, FileMap, File};
+pub use types::{File, FileMap, UnreactError, UnreactResult};
 
 /// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
