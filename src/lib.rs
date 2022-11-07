@@ -9,8 +9,25 @@ use serde_json::Value;
 pub use app::{Config, Unreact};
 pub use types::{File, FileMap, UnreactError, UnreactResult};
 
+/// Most useful functions and types
+/// 
+/// # Examples
+/// 
+/// ```
+/// use unreact::prelude::*;
+/// ```
+pub mod prelude {
+  pub use crate::{is_dev, Config, Unreact, UnreactError, UnreactResult};
+}
+
 /// Directory of temporary development build
 pub const DEV_BUILD_DIR: &str = ".devbuild";
+
+/// Check if `--dev` or `-d` argument was passed on run
+pub fn is_dev() -> bool {
+  let args = std::env::args().collect::<Vec<_>>();
+  args.contains(&"--dev".to_string()) || args.contains(&"-d".to_string())
+}
 
 /// Recursively read files from tree directory
 ///

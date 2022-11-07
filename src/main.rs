@@ -1,6 +1,6 @@
 use serde_json::json;
 
-use unreact::{Unreact, Config};
+use unreact::prelude::*;
 
 const URL: &str = "https://darccyy.github.io/unreact";
 
@@ -55,10 +55,4 @@ fn main() -> unreact::UnreactResult<()> {
   println!("Compiled successfully.");
 
   Ok(())
-}
-
-/// Check if `--dev` or `-d` argument was passed on run
-fn is_dev() -> bool {
-  let args = std::env::args().collect::<Vec<_>>();
-  args.contains(&"--dev".to_string()) || args.contains(&"-d".to_string())
 }
