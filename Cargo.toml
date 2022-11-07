@@ -5,6 +5,9 @@ edition = "2021"
 description = "A static site generation framework for Rust using Handlebars and Scss."
 license = "MIT"
 exclude = ["build", "docs", ".devbuild", "templates", "styles", "public", "target", "justfile"]
+repository = "https://github.com/darccyy/unreact"
+authors = ["darcy"]
+keywords = ["react", "framework", "ssg", "static", "static site", "static-site", "generation", "web", "website"]
 
 [dependencies]
 grass = "0.11.2"
