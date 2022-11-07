@@ -17,13 +17,13 @@ exclude = [
 repository = "https://github.com/darccyy/unreact"
 authors = ["darcy"]
 keywords = [
-  "react",
   "framework",
   "ssg",
   "static",
-  "static site",
+  "site",
   "static-site",
   "generation",
+  "react",
   "web",
   "website",
 ]
