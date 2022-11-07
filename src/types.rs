@@ -56,7 +56,7 @@ pub enum UnreactError {
   ///
   /// See: [handlebars](https://crates.io/crates/handlebars) crate
   RegisterPartialFail(String),
-  
+
   /// Failed to register inbuilt partial
   ///
   /// Try:
@@ -71,8 +71,37 @@ pub enum UnreactError {
 impl std::error::Error for UnreactError {}
 impl std::fmt::Display for UnreactError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    // TODO Change this format
-    write!(f, "Unreact Error:\n{:?}", self)
+    match self {
+      UnreactError::DirNotExist(path) => write!(
+        f,
+        "Directory does not exist at '{path}' (UnreactError::DirNotExist)"
+      ),
+      UnreactError::TemplateNotExist(name) => write!(
+        f,
+        "Template does not exist with name '{name}' (UnreactError::TemplateNotExist)"
+      ),
+      UnreactError::ScssConvertFail(name) => write!(
+        f,
+        "Failed to convert SCSS to CSS for '{name}' (UnreactError::ScssConvertFail)"
+      ),
+      UnreactError::MinifyCssFail(name) => write!(
+        f,
+        "Failed to minify CSS file for '{name}' (UnreactError::MinifyCssFail)"
+      ),
+      UnreactError::RenderFail(name) => write!(
+        f,
+        "Failed to render template with name '{name}' (UnreactError::RenderFail)"
+      ),
+      UnreactError::RegisterPartialFail(name) => write!(
+        f,
+        "Failed to register custom partial with name '{name}' (UnreactError::RegisterPartialFail)"
+      ),
+      UnreactError::RegisterInbuiltPartialFail(name) => write!(
+        f,
+        "Failed to register inbuilt partial '{name}' (UnreactError::RegisterInbuiltPartialFail)"
+      ),
+      UnreactError::IoError(err, path) => write!(f, "IO Error: {err:?}, at '{path}'"),
+    }
   }
 }
 
