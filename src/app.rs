@@ -356,11 +356,11 @@ impl Unreact {
       };
 
       // Create file
-      if let Err(_) = fs::write(format!("./{parent}/{}.html", file.path), &output) {
-        return Err(UnreactError::WriteFileFail(format!(
-          "./{parent}/{}.html",
-          file.path
-        )));
+      if let Err(err) = fs::write(format!("./{parent}/{}.html", file.path), &output) {
+        return Err(UnreactError::IoError(
+          err,
+          format!("./{parent}/{}.html", file.path),
+        ));
       }
     }
 
@@ -373,38 +373,38 @@ impl Unreact {
       // Convert from scss to css
       let parsed = match grass::from_string(content.to_string(), &grass::Options::default()) {
         Ok(x) => x,
-        Err(_) => return Err(UnreactError::ScssFail(path.to_string())),
+        Err(_) => return Err(UnreactError::ScssConvertFail(path.to_string())),
       };
 
       // Minify if enabled
       let output = if self.config.minify {
         // Minified css
         use css_minify::optimizations::{Level, Minifier};
-        Minifier::default()
-          .minify(&parsed, Level::Two)
-          .expect(&format!("Could not minify css in file '{path}'"))
+
+        match Minifier::default().minify(&parsed, Level::Two) {
+          Ok(x) => x,
+          Err(_) => return Err(UnreactError::MinifyCssFail(path.to_string())),
+        }
       } else {
         // Un-minified file
         parsed
       };
 
       // Create file - Convert from `scss` to `css` with `grass`
-      if let Err(_) = fs::write(format!("./{parent}/{path}.css"), output) {
-        return Err(UnreactError::WriteFileFail(format!(
-          "./{parent}/{path}.css"
-        )));
+      if let Err(err) = fs::write(format!("./{parent}/{path}.css"), output) {
+        return Err(UnreactError::IoError(err, format!("./{parent}/{path}.css")));
       }
     }
 
     // Copy public files
-    if let Err(_) = dircpy::copy_dir(
+    if let Err(err) = dircpy::copy_dir(
       format!("./{}", &self.config.public),
       format!("./{}/public", self.config.build),
     ) {
-      return Err(UnreactError::CopyDirFail(format!(
-        "./{}",
-        &self.config.public
-      )));
+      return Err(UnreactError::IoError(
+        err,
+        format!("./{}", &self.config.public),
+      ));
     };
 
     // Open local server if in dev mode
@@ -534,16 +534,16 @@ impl Unreact {
 
     // Remove build directory if exists
     if Path::new(&format!("./{}", config.build)).exists() {
-      if let Err(_) = fs::remove_dir_all(format!("./{}", config.build)) {
-        return Err(UnreactError::RemoveDirFail(config.build.to_string()));
+      if let Err(err) = fs::remove_dir_all(format!("./{}", config.build)) {
+        return Err(UnreactError::IoError(err, config.build.to_string()));
       };
     }
 
     // Create new build directory and generic subfolders
     let dirs = vec!["", "/styles", "/public"];
     for dir in dirs {
-      if let Err(_) = fs::create_dir(format!("./{}{}", config.build, dir)) {
-        return Err(UnreactError::CreateDirFail(config.build.to_string()));
+      if let Err(err) = fs::create_dir(format!("./{}{}", config.build, dir)) {
+        return Err(UnreactError::IoError(err, config.build.to_string()));
       }
     }
 

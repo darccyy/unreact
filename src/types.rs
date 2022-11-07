@@ -5,37 +5,73 @@ use std::collections::HashMap;
 pub type UnreactResult<T> = Result<T, UnreactError>;
 
 /// Custom error message for Unreact
+///
+/// See enum variants for detailed description of each
 //TODO Rename enum
-//TODO Rename kinds
-//TODO Change one-use kinds to unit
-//TODO Remove unused
 #[derive(Debug)]
 pub enum UnreactError {
-  InitFail(String),
+  /// Given directory does not exist
+  ///
+  /// Try:
+  ///  - Verifying config directories exist in workspace
   DirNotExist(String),
 
+  /// Cannot find template with name given
+  ///
+  /// Try:
+  ///  - Removing file extension `.hbs` from template name
+  ///  - Verifying template name matches path in template directory
   TemplateNotExist(String),
 
-  ScssFail(String),
-  MinifyFail(String),
+  /// Failed to convert `.scss` to `.css`
+  ///
+  /// Try:
+  ///  - Checking for any bugs or unsupported features in the `.scss` file
+  ///
+  /// See: [grass](https://crates.io/crates/grass) crate
+  ScssConvertFail(String),
 
+  /// Failed to minify `.css` file
+  ///
+  /// Try:
+  ///  - Checking for any bugs or unsupported features in the original `.css` or `.scss` file
+  ///
+  /// See: [css-minify](https://crates.io/crates/css-minify) crate
+  MinifyCssFail(String),
+
+  /// Failed to render template
+  ///
+  /// Try:
+  ///  - Checking for any bugs or unsupported features in the `.hbs` file
+  ///
+  /// See: [handlebars](https://crates.io/crates/handlebars) crate
   RenderFail(String),
+
+  /// Failed to register partial
+  ///
+  /// All `.hbs` templates are automatically registered as partials
+  ///
+  /// Try:
+  ///  - Checking for any bugs or unsupported features in the `.hbs` file
+  ///
+  /// See: [handlebars](https://crates.io/crates/handlebars) crate
   RegisterPartialFail(String),
+  
+  /// Failed to register inbuilt partial
+  ///
+  /// Try:
+  ///  - Reporting this bug
+  //TODO Put link here ^^^
   RegisterInbuiltPartialFail(String),
 
-  ServerFail(crate::server::UnreactDevError),
-
-  WriteFileFail(String),
-  RemoveDirFail(String),
-  CreateDirFail(String),
-  CopyDirFail(String),
-  ReadDirFail(String),
+  /// An IO or FS error occurred
+  IoError(std::io::Error, String),
 }
 
 impl std::error::Error for UnreactError {}
 impl std::fmt::Display for UnreactError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    // TODO ? Change this format ?
+    // TODO Change this format
     write!(f, "Unreact Error:\n{:?}", self)
   }
 }

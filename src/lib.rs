@@ -12,7 +12,6 @@ mod types;
 pub mod prelude {
   pub use crate::app::{Config, Unreact};
   pub use crate::is_dev;
-  pub use crate::server::UnreactDevError;
   pub use crate::types::{UnreactError, UnreactResult};
 }
 
@@ -75,7 +74,7 @@ fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<(
   let dir_path_clone = dir_path.clone();
   let dir = match fs::read_dir(dir_path) {
     Ok(x) => x,
-    Err(_) => return Err(UnreactError::ReadDirFail(dir_path_clone)),
+    Err(err) => return Err(UnreactError::IoError(err, dir_path_clone)),
   };
 
   // Loop files in directory
@@ -94,8 +93,9 @@ fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<(
           // Add to templates
           let content = match fs::read_to_string(file.path()) {
             Ok(x) => x,
-            Err(_) => {
-              return Err(UnreactError::ReadDirFail(
+            Err(err) => {
+              return Err(UnreactError::IoError(
+                err,
                 file
                   .path()
                   .to_str()
@@ -125,12 +125,11 @@ fn create_dir_all_safe(parent: &str, child: &str) -> UnreactResult<()> {
     let path = format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/"));
     // Check if exists, create if not
     if !Path::new(&path).exists() {
-      if let Err(_) = fs::create_dir(path) {
-        return Err(UnreactError::CreateDirFail(format!(
-          "./{}/{}",
-          parent,
-          folders.get(0..i).unwrap().join("/")
-        )));
+      if let Err(err) = fs::create_dir(path) {
+        return Err(UnreactError::IoError(
+          err,
+          format!("./{}/{}", parent, folders.get(0..i).unwrap().join("/")),
+        ));
       }
     }
   }

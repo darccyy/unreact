@@ -5,8 +5,7 @@ use std::{convert::Infallible, fs, path::Path};
 
 use crate::DEV_BUILD_DIR;
 
-//TODO Make better!!!
-pub type UnreactDevError = String;
+//TODO Add error handling ?
 
 /// Local address with port to host dev server
 pub const ADDRESS: &str = "127.0.0.1:8080";
