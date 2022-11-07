@@ -60,8 +60,7 @@ pub enum UnreactError {
   /// Failed to register inbuilt partial
   ///
   /// Try:
-  ///  - Reporting this bug
-  //TODO Put link here ^^^
+  ///  - Reporting this bug [here](https://github.com/darccyy/unreact/issues/new)
   RegisterInbuiltPartialFail(String),
 
   /// An IO or FS error occurred
