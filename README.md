@@ -7,11 +7,3 @@ Work in progress...
 # Usage
 
 uhh...
-
-# Name
-
-Might change...
-
-- unreact
-- noreact
-- dontreact
