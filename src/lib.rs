@@ -6,8 +6,8 @@ use std::{fs, path::Path};
 
 use serde_json::Value;
 
-pub use app::{Config, Unreact};
-pub use types::{File, FileMap, UnreactError, UnreactResult};
+use prelude::*;
+use types::{File, FileMap};
 
 /// Most useful functions and types
 ///
@@ -17,7 +17,9 @@ pub use types::{File, FileMap, UnreactError, UnreactResult};
 /// use unreact::prelude::*;
 /// ```
 pub mod prelude {
-  pub use crate::{is_dev, Config, Unreact, UnreactError, UnreactResult};
+  pub use crate::app::{Config, Unreact};
+  pub use crate::is_dev;
+  pub use crate::types::{UnreactError, UnreactResult};
 }
 
 /// Directory of temporary development build

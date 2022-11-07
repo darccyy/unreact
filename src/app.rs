@@ -177,7 +177,7 @@ impl Unreact {
   /// `content`: Raw text content to write to file, without template
   ///
   /// # Examples
-  /// 
+  ///
   /// Renders two files with raw text
   ///
   /// ```
@@ -209,7 +209,7 @@ impl Unreact {
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
   ///
   /// # Examples
-  /// 
+  ///
   /// Renders two files with templates
   ///
   /// ```
@@ -245,7 +245,7 @@ impl Unreact {
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
   ///
   /// # Examples
-  /// 
+  ///
   /// Renders an index page with a custom message
   ///
   /// ```
@@ -279,7 +279,7 @@ impl Unreact {
   /// # Examples
   ///
   /// Renders a 404 page
-  /// 
+  ///
   /// ```
   /// use unreact::prelude::*;
   /// use serde_json::{Value};

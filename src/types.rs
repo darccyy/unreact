@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-/// Alias of common result type
+/// Alias of result type, with [UnreactError]
 //TODO Rename enum
 pub type UnreactResult<T> = Result<T, UnreactError>;
 
-/// Custom error message for this module
+/// Custom error message for Unreact
 //TODO Rename enum
 //TODO Rename kinds
 //TODO Change one-use kinds to unit
