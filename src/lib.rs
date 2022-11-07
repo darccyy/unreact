@@ -2,13 +2,6 @@ mod app;
 mod server;
 mod types;
 
-use std::{fs, path::Path};
-
-use serde_json::Value;
-
-use prelude::*;
-use types::{File, FileMap};
-
 /// Most useful functions and types
 ///
 /// # Examples
@@ -19,11 +12,30 @@ use types::{File, FileMap};
 pub mod prelude {
   pub use crate::app::{Config, Unreact};
   pub use crate::is_dev;
+  pub use crate::server::UnreactDevError;
   pub use crate::types::{UnreactError, UnreactResult};
 }
 
-/// Directory of temporary development build
-pub const DEV_BUILD_DIR: &str = ".devbuild";
+/// Development items, not used often, but good to have exposed if necessary
+///
+/// # Examples
+///
+/// ```
+/// use unreact::dev::*;
+/// ```
+pub mod dev {
+  /// Directory of temporary development build
+  pub const DEV_BUILD_DIR: &str = ".devbuild";
+  pub use crate::server::{ADDRESS, DEV_SCRIPT};
+}
+
+use serde_json::Value;
+use std::{fs, path::Path};
+
+// For `crate`, not `pub`
+use dev::*;
+pub use prelude::*;
+use types::{File, FileMap};
 
 /// Check if `--dev` or `-d` argument was passed on `cargo run`
 ///

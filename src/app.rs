@@ -1,7 +1,6 @@
-use std::{fs, path::Path};
-
 use handlebars::Handlebars;
 use serde_json::Value;
+use std::{fs, path::Path};
 
 use crate::{
   create_dir_all_safe, load_filemap, merge_json, server, File, FileMap, UnreactError,

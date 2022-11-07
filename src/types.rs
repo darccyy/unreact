@@ -23,7 +23,7 @@ pub enum UnreactError {
   RegisterPartialFail(String),
   RegisterInbuiltPartialFail(String),
 
-  ServerFail(crate::server::ServerError),
+  ServerFail(crate::server::UnreactDevError),
 
   WriteFileFail(String),
   RemoveDirFail(String),

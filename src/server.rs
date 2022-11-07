@@ -1,13 +1,12 @@
-use std::{convert::Infallible, fs, path::Path};
-
 use http::{Method, StatusCode};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server};
+use std::{convert::Infallible, fs, path::Path};
 
 use crate::DEV_BUILD_DIR;
 
 //TODO Make better!!!
-pub type ServerError = String;
+pub type UnreactDevError = String;
 
 /// Local address with port to host dev server
 pub const ADDRESS: &str = "127.0.0.1:8080";
