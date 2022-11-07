@@ -16,17 +16,7 @@ exclude = [
 ]
 repository = "https://github.com/darccyy/unreact"
 authors = ["darcy"]
-keywords = [
-  "framework",
-  "ssg",
-  "static",
-  "site",
-  "static-site",
-  "generation",
-  "react",
-  "web",
-  "website",
-]
+keywords = ["framework", "ssg", "static", "site", "web"]
 
 [dependencies]
 grass = "0.11.2"
