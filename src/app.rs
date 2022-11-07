@@ -104,6 +104,8 @@ impl Unreact {
   ///
   /// # Examples
   ///
+  /// Compiles a basic site
+  ///
   /// ```
   /// use unreact::prelude::*;
   ///
@@ -148,6 +150,8 @@ impl Unreact {
   ///
   /// # Examples
   ///
+  /// Creates a global variable
+  ///
   /// ```
   /// use unreact::prelude::*;
   /// use serde_json::json;
@@ -173,6 +177,8 @@ impl Unreact {
   /// `content`: Raw text content to write to file, without template
   ///
   /// # Examples
+  /// 
+  /// Renders two files with raw text
   ///
   /// ```
   /// use unreact::prelude::*;
@@ -180,7 +186,9 @@ impl Unreact {
   /// fn main() -> UnreactResult<()> {
   ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com")?;
   ///
+  ///   // Renders to `./build/index.html`
   ///   app.page_plain("index", "This is my site");
+  ///   // Renders to `./build/path/file.html`
   ///   app.page_plain("path/file", "This file is in ./build/path/file.html");
   ///
   ///   app.finish()?;
@@ -196,11 +204,13 @@ impl Unreact {
   ///
   /// `path`: Output path in build directory, **without** `.html` extension
   ///
-  /// `template`: Name of template to render
+  /// `template`: Name of template to render, **without** `.hbs` extension
   ///
   /// `data`: JSON data to render with (use `serde_json::json!` macro)
   ///
   /// # Examples
+  /// 
+  /// Renders two files with templates
   ///
   /// ```
   /// use unreact::prelude::*;
@@ -224,11 +234,19 @@ impl Unreact {
     Ok(self)
   }
 
-  /// Register index page (`./index.html`)
+  /// Register index page (`./index.html`), with template
   ///
   /// Alias of `app.page("index", ...)`
   ///
+  /// `path`: Output path in build directory, **without** `.html` extension
+  ///
+  /// `template`: Name of template to render, **without** `.hbs` extension
+  ///
+  /// `data`: JSON data to render with (use `serde_json::json!` macro)
+  ///
   /// # Examples
+  /// 
+  /// Renders an index page with a custom message
   ///
   /// ```
   /// use unreact::prelude::*;
@@ -252,8 +270,16 @@ impl Unreact {
   ///
   /// Alias of `app.page("404", ...)`
   ///
+  /// `path`: Output path in build directory, **without** `.html` extension
+  ///
+  /// `template`: Name of template to render, **without** `.hbs` extension
+  ///
+  /// `data`: JSON data to render with (use `serde_json::json!` macro)
+  ///
   /// # Examples
   ///
+  /// Renders a 404 page
+  /// 
   /// ```
   /// use unreact::prelude::*;
   /// use serde_json::{Value};
@@ -277,7 +303,7 @@ impl Unreact {
   /// # Examples
   ///
   /// Compiles to `./build`, in production mode
-  /// 
+  ///
   /// ```
   /// use unreact::prelude::*;
   ///
@@ -292,7 +318,7 @@ impl Unreact {
   /// ```
   ///
   /// Compiles to `./.devbuild`, in development mode, and host to `http://127.0.0.1:8080`
-  /// 
+  ///
   /// ```
   /// use unreact::prelude::*;
   ///
@@ -391,8 +417,27 @@ impl Unreact {
   }
 
   /// Render a template with data
-  // ? Make public ?
-  fn render(&self, name: &str, data: &Value) -> UnreactResult<String> {
+  ///
+  /// `template`: Name of template to render, **without** `.hbs` extension
+  ///
+  /// `data`: JSON data to render with (use `serde_json::json!` macro)
+  ///
+  /// # Examples
+  ///
+  /// Prints a template to standard output, completed with a custom message
+  ///
+  /// ```
+  /// use unreact::prelude::*;
+  ///
+  /// fn main() -> UnreactResult<()> {
+  ///   let mut app = Unreact::new(Config::default(), false, "https://mysite.com");
+  ///
+  ///   println!("{}", app.render("index", &json!({"msg": "Hello!"})));  
+  ///
+  ///   Ok(())
+  /// }
+  /// ```
+  pub fn render(&self, name: &str, data: &Value) -> UnreactResult<String> {
     // Get template string from name
     let template = match self.templates.get(name) {
       Some(s) => s,
@@ -403,14 +448,35 @@ impl Unreact {
     let mut reg = Handlebars::new();
 
     // Register all other templates as partials
-    for (k, v) in &self.templates {
-      if let Err(_) = reg.register_partial(k, v) {
-        return Err(UnreactError::RegisterPartialFail(k.to_string()));
+    for (name, part) in &self.templates {
+      if let Err(_) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterPartialFail(name.to_string()));
       }
     }
 
     // Register inbuilt partials
-    let parts: Vec<(&str, String)> = vec![
+    for (name, part) in self.inbuilt_partials() {
+      if let Err(_) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterInbuiltPartialFail(name.to_string()));
+      }
+    }
+
+    // ? Remove `.clone` (2x) ? how ?
+    let mut data = data.clone();
+    if !self.globals.is_null() {
+      merge_json(&mut data, self.globals.clone());
+    }
+
+    // Render template
+    match reg.render_template(template, &data) {
+      Ok(x) => Ok(x),
+      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
+    }
+  }
+
+  /// Get inbuilt partials to register in `Unreact::render`
+  fn inbuilt_partials(&self) -> Vec<(&'static str, String)> {
+    vec![
       (
         // Base url for site
         "URL",
@@ -440,25 +506,7 @@ impl Unreact {
         "STYLE",
         r#"<link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />"#.to_string(),
       ),
-    ];
-
-    for (name, part) in parts {
-      if let Err(_) = reg.register_partial(name, part) {
-        return Err(UnreactError::RegisterPartialFail(name.to_string()));
-      }
-    }
-
-    // ? Remove `.clone` (2x) ? how ?
-    let mut data = data.clone();
-    if !self.globals.is_null() {
-      merge_json(&mut data, self.globals.clone());
-    }
-
-    // Render template
-    match reg.render_template(template, &data) {
-      Ok(x) => Ok(x),
-      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
-    }
+    ]
   }
 
   /// Open local server and listen

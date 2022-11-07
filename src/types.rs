@@ -21,6 +21,7 @@ pub enum UnreactError {
 
   RenderFail(String),
   RegisterPartialFail(String),
+  RegisterInbuiltPartialFail(String),
 
   ServerFail(crate::server::ServerError),
 

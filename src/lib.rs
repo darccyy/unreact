@@ -24,14 +24,18 @@ pub mod prelude {
 pub const DEV_BUILD_DIR: &str = ".devbuild";
 
 /// Check if `--dev` or `-d` argument was passed on `cargo run`
-/// 
+///
 /// # Examples
-/// 
+///
+/// This will run in production mode
+///
 /// ```ps1
-/// # Runs in production mode
 /// cargo run
-/// 
-/// # Runs in development mode
+/// ```
+///
+/// This will run in development mode
+///
+/// ```ps1
 /// cargo run -- --dev
 /// cargo run -- -d
 /// ```
@@ -81,8 +85,8 @@ fn load_filemap(map: &mut FileMap, parent: &str, child: &str) -> UnreactResult<(
                 file
                   .path()
                   .to_str()
-                  //TODO Handle
-                  .expect("Could not convert path to string")
+                  // ? Handle ?
+                  .unwrap_or("{unknown}")
                   .to_string(),
               ));
             }
