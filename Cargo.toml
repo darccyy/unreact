@@ -35,9 +35,9 @@ serde = "1.0.139"
 serde_json = "1.0.87"
 minify-html = "0.10.3"
 css-minify = "0.2.2"
-# For running app in dev mode - NOT [dev-dependencies]
-just = "1.8.0"
-tokio = { version = "1", features = ["full"] }
-http = "0.2.8"
-hyper = { version = "0.14", features = ["full"] }
 dircpy = "0.3.13"
+# For running app in dev mode - NOT [dev-dependencies]
+tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
+hyper = { version = "0.14", features = ["server", "tcp", "http1"] }
+http = "0.2.8"
+just = "1.8.0"
