@@ -1,6 +1,6 @@
 # TODO
 
-- Add error examples to doc comments
+- Add issue templates
 
 ## Maybe?
 
