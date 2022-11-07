@@ -16,7 +16,7 @@ pub enum UnreactError {
 
   TemplateNotExist(String),
 
-  SCSSFail(String),
+  ScssFail(String),
   MinifyFail(String),
 
   RenderFail(String),

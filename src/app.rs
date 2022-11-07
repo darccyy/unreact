@@ -348,7 +348,7 @@ impl Unreact {
       // Convert from scss to css
       let parsed = match grass::from_string(content.to_string(), &grass::Options::default()) {
         Ok(x) => x,
-        Err(_) => return Err(UnreactError::SCSSFail(path.to_string())),
+        Err(_) => return Err(UnreactError::ScssFail(path.to_string())),
       };
 
       // Minify if enabled
