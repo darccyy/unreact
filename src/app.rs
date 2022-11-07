@@ -105,6 +105,7 @@ impl Unreact {
   /// # Examples
   ///
   /// ```
+  /// use unreact::prelude;
   /// let mut app = Unreact::new(Config::default(), false, "https://mysite.com");
   /// ```
   pub fn new(config: Config, is_dev: bool, url: &str) -> UnreactResult<Self> {
@@ -135,133 +136,11 @@ impl Unreact {
     })
   }
 
-  /// Returns as error if any value of `config` are not valid directories
-  ///
-  /// Creates build directory
-  fn check_dirs(config: &Config) -> UnreactResult<()> {
-    // Collate directory names
-    let dirs = vec![&config.templates, &config.public, &config.styles];
-
-    // Loop directories that should exist
-    for dir in dirs {
-      // Check if directory exists
-      let path = Path::new(dir);
-      if !path.is_dir() {
-        // return Err(Box::new(UnreactErrorOld(format!(
-        //   "Directory `{dir}` does not exist"
-        // ))));
-        return Err(UnreactError::DirNotExist(dir.to_string()));
-      }
-    }
-
-    // Remove build directory if exists
-    if Path::new(&format!("./{}", config.build)).exists() {
-      if let Err(_) = fs::remove_dir_all(format!("./{}", config.build)) {
-        return Err(UnreactError::RemoveDirFail(config.build.to_string()));
-      };
-    }
-
-    // Create new build directory and generic subfolders
-    let dirs = vec!["", "/styles", "/public"];
-    for dir in dirs {
-      if let Err(_) = fs::create_dir(format!("./{}{}", config.build, dir)) {
-        return Err(UnreactError::CreateDirFail(config.build.to_string()));
-      }
-    }
-
-    Ok(())
-  }
-
-  /// Load all templates in directory of `templates` property in `config`
-  fn load_templates(config: &Config) -> UnreactResult<FileMap> {
-    let mut templates = FileMap::new();
-    load_filemap(&mut templates, &config.templates, "")?;
-    Ok(templates)
-  }
-
-  /// Import all scss files in directory of `styles` property in `config`
-  fn load_styles(config: &Config) -> UnreactResult<FileMap> {
-    let mut styles = FileMap::new();
-    load_filemap(&mut styles, &config.styles, "")?;
-    Ok(styles)
-  }
-
   /// Set global variables to new `serde_json::Value`
   // ? Create getter ?
   pub fn set_globals(&mut self, data: Value) -> &mut Self {
     self.globals = data;
     self
-  }
-
-  /// Render a template with data
-  // ? Make public ?
-  fn render(&self, name: &str, data: &Value) -> UnreactResult<String> {
-    // Get template string from name
-    let template = match self.templates.get(name) {
-      Some(s) => s,
-      None => return Err(UnreactError::TemplateNotExist(name.to_string())),
-    };
-
-    // Create handlebars registry
-    let mut reg = Handlebars::new();
-
-    // Register all other templates as partials
-    for (k, v) in &self.templates {
-      if let Err(_) = reg.register_partial(k, v) {
-        return Err(UnreactError::RegisterPartialFail(k.to_string()));
-      }
-    }
-
-    // Register inbuilt partials
-    let parts: Vec<(&str, String)> = vec![
-      (
-        // Base url for site
-        "URL",
-        if self.is_dev {
-          format!("http://{}", server::ADDRESS)
-        } else {
-          self.url.to_string()
-        },
-      ),
-      // Script for development
-      // Is not registered if `dev_warning` in config is false
-      (
-        "DEV_SCRIPT",
-        if self.is_dev && self.config.dev_warning {
-          server::DEV_SCRIPT.to_string()
-        } else {
-          "".to_string()
-        },
-      ),
-      // Simple link
-      (
-        "LINK",
-        r#"<a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>"#.to_string(),
-      ),
-      // Simple style tag
-      (
-        "STYLE",
-        r#"<link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />"#.to_string(),
-      ),
-    ];
-
-    for (name, part) in parts {
-      if let Err(_) = reg.register_partial(name, part) {
-        return Err(UnreactError::RegisterPartialFail(name.to_string()));
-      }
-    }
-
-    // ? Remove `.clone` (2x) ? how ?
-    let mut data = data.clone();
-    if !self.globals.is_null() {
-      merge_json(&mut data, self.globals.clone());
-    }
-
-    // Render template
-    match reg.render_template(template, &data) {
-      Ok(x) => Ok(x),
-      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
-    }
   }
 
   /// Register new page (file) with any path, without template (plain)
@@ -386,8 +265,130 @@ impl Unreact {
     Ok(self)
   }
 
+  /// Render a template with data
+  // ? Make public ?
+  fn render(&self, name: &str, data: &Value) -> UnreactResult<String> {
+    // Get template string from name
+    let template = match self.templates.get(name) {
+      Some(s) => s,
+      None => return Err(UnreactError::TemplateNotExist(name.to_string())),
+    };
+
+    // Create handlebars registry
+    let mut reg = Handlebars::new();
+
+    // Register all other templates as partials
+    for (k, v) in &self.templates {
+      if let Err(_) = reg.register_partial(k, v) {
+        return Err(UnreactError::RegisterPartialFail(k.to_string()));
+      }
+    }
+
+    // Register inbuilt partials
+    let parts: Vec<(&str, String)> = vec![
+      (
+        // Base url for site
+        "URL",
+        if self.is_dev {
+          format!("http://{}", server::ADDRESS)
+        } else {
+          self.url.to_string()
+        },
+      ),
+      // Script for development
+      // Is not registered if `dev_warning` in config is false
+      (
+        "DEV_SCRIPT",
+        if self.is_dev && self.config.dev_warning {
+          server::DEV_SCRIPT.to_string()
+        } else {
+          "".to_string()
+        },
+      ),
+      // Simple link
+      (
+        "LINK",
+        r#"<a href="{{>URL}}/{{to}}"> {{>@partial-block}} </a>"#.to_string(),
+      ),
+      // Simple style tag
+      (
+        "STYLE",
+        r#"<link rel="stylesheet" href="{{>URL}}/styles/{{name}}.css" />"#.to_string(),
+      ),
+    ];
+
+    for (name, part) in parts {
+      if let Err(_) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterPartialFail(name.to_string()));
+      }
+    }
+
+    // ? Remove `.clone` (2x) ? how ?
+    let mut data = data.clone();
+    if !self.globals.is_null() {
+      merge_json(&mut data, self.globals.clone());
+    }
+
+    // Render template
+    match reg.render_template(template, &data) {
+      Ok(x) => Ok(x),
+      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
+    }
+  }
+
   /// Open local server and listen
   fn listen() {
     server::listen();
+  }
+
+  /// Returns as error if any value of `config` are not valid directories
+  ///
+  /// Creates build directory
+  fn check_dirs(config: &Config) -> UnreactResult<()> {
+    // Collate directory names
+    let dirs = vec![&config.templates, &config.public, &config.styles];
+
+    // Loop directories that should exist
+    for dir in dirs {
+      // Check if directory exists
+      let path = Path::new(dir);
+      if !path.is_dir() {
+        // return Err(Box::new(UnreactErrorOld(format!(
+        //   "Directory `{dir}` does not exist"
+        // ))));
+        return Err(UnreactError::DirNotExist(dir.to_string()));
+      }
+    }
+
+    // Remove build directory if exists
+    if Path::new(&format!("./{}", config.build)).exists() {
+      if let Err(_) = fs::remove_dir_all(format!("./{}", config.build)) {
+        return Err(UnreactError::RemoveDirFail(config.build.to_string()));
+      };
+    }
+
+    // Create new build directory and generic subfolders
+    let dirs = vec!["", "/styles", "/public"];
+    for dir in dirs {
+      if let Err(_) = fs::create_dir(format!("./{}{}", config.build, dir)) {
+        return Err(UnreactError::CreateDirFail(config.build.to_string()));
+      }
+    }
+
+    Ok(())
+  }
+
+  /// Load all templates in directory of `templates` property in `config`
+  fn load_templates(config: &Config) -> UnreactResult<FileMap> {
+    let mut templates = FileMap::new();
+    load_filemap(&mut templates, &config.templates, "")?;
+    Ok(templates)
+  }
+
+  /// Import all scss files in directory of `styles` property in `config`
+  fn load_styles(config: &Config) -> UnreactResult<FileMap> {
+    let mut styles = FileMap::new();
+    load_filemap(&mut styles, &config.styles, "")?;
+    Ok(styles)
   }
 }
