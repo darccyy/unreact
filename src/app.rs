@@ -101,6 +101,12 @@ impl Unreact {
   /// Use `Config::default()` as `config` for default config
   ///
   /// Use `Config::github_pages()` as `config` for recommended config for hosting on GitHub Pages default (Builds to `./docs`)
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// let mut app = Unreact::new(Config::default(), false, "https://mysite.com");
+  /// ```
   pub fn new(config: Config, is_dev: bool, url: &str) -> UnreactResult<Self> {
     // Convert build directory to constant dev build directory if is dev
     let config = if is_dev {
