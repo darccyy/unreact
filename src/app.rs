@@ -10,15 +10,13 @@ use crate::{
 /// Config for directories and options
 ///
 /// Use `Config::default()` for default config
-///
-/// Use `Config::github_pages()` for recommended default for hosting on GitHub Pages (Builds to `./docs`)
 #[derive(Debug)]
 pub struct Config {
   /// Directory of output files - build directory
   ///
   /// For production. Temporary folder `./.devbuild` is used in development
   ///
-  /// Default: `"build"`, or `"docs"` with `Config::github_pages()`
+  /// Default: `"build"`
   pub build: String,
   /// Directory of templates and partials (`.hbs`)
   ///
@@ -61,16 +59,6 @@ impl Default for Config {
   }
 }
 
-impl Config {
-  /// Returns recommended default for hosting on GitHub Pages (Builds to `./docs`)
-  pub fn github_pages() -> Self {
-    Config {
-      build: "docs".to_string(),
-      ..Default::default()
-    }
-  }
-}
-
 /// API interface object
 ///
 /// Create with `Unreact::new()`
@@ -98,8 +86,6 @@ impl Unreact {
   /// Create new API interface
   ///
   /// Use `Config::default()` as `config` for default config
-  ///
-  /// Use `Config::github_pages()` as `config` for recommended config for hosting on GitHub Pages default (Builds to `./docs`)
   ///
   /// # Examples
   ///
