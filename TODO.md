@@ -1,5 +1,8 @@
 # TODO
 
+- Add github actions
+- - Remove `Config::github_actions` ?
+- Add more description to errors
 - Add issue templates
 - Add examples folder
 
