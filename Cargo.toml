@@ -32,4 +32,3 @@ dircpy = "0.3.13"
 tokio = { version = "1", features = ["rt", "rt-multi-thread"] }
 hyper = { version = "0.14", features = ["server", "tcp", "http1"] }
 http = "0.2.8"
-just = "1.8.0"
