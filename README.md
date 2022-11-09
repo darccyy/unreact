@@ -8,6 +8,8 @@ Submit issue [here](https://github.com/darccyy/unreact/issues/new)
 
 # Usage
 
+For a quick start, check out [Unreact Template](https://github.com/darccyy/unreact-template)
+
 ## Production
 
 ```ps1
