@@ -1,3 +1,4 @@
+use handlebars::{RenderError, TemplateError};
 use std::collections::HashMap;
 
 /// Alias of result type, with [UnreactError]
@@ -29,7 +30,7 @@ pub enum UnreactError {
   ///  - Checking for any bugs or unsupported features in the `.scss` file
   ///
   /// See: [grass](https://crates.io/crates/grass) crate
-  ScssConvertFail(String),
+  ScssConvertFail(String, String),
 
   /// Failed to minify `.css` file
   ///
@@ -37,7 +38,7 @@ pub enum UnreactError {
   ///  - Checking for any bugs or unsupported features in the original `.css` or `.scss` file
   ///
   /// See: [css-minify](https://crates.io/crates/css-minify) crate
-  MinifyCssFail(String),
+  MinifyCssFail(String, String),
 
   /// Failed to render template
   ///
@@ -45,7 +46,7 @@ pub enum UnreactError {
   ///  - Checking for any bugs or unsupported features in the `.hbs` file
   ///
   /// See: [handlebars](https://crates.io/crates/handlebars) crate
-  HandlebarsFail(String, handlebars::RenderError),
+  HandlebarsFail(String, RenderError),
 
   /// Failed to register partial
   ///
@@ -55,13 +56,13 @@ pub enum UnreactError {
   ///  - Checking for any bugs or unsupported features in the `.hbs` file
   ///
   /// See: [handlebars](https://crates.io/crates/handlebars) crate
-  RegisterPartialFail(String),
+  RegisterPartialFail(String, TemplateError),
 
   /// Failed to register inbuilt partial
   ///
   /// Try:
   ///  - Reporting this bug [here](https://github.com/darccyy/unreact/issues/new)
-  RegisterInbuiltPartialFail(String),
+  RegisterInbuiltPartialFail(String, TemplateError),
 
   /// An IO or FS error occurred
   IoError(std::io::Error, String),
@@ -79,27 +80,30 @@ impl std::fmt::Display for UnreactError {
         f,
         "Template does not exist with name '{name}' (UnreactError::TemplateNotExist)"
       ),
-      UnreactError::ScssConvertFail(name) => write!(
+      UnreactError::ScssConvertFail(name, err) => write!(
         f,
-        "Failed to convert SCSS to CSS for '{name}' (UnreactError::ScssConvertFail)"
+        "Failed to convert SCSS to CSS for '{name}' (UnreactError::ScssConvertFail) - {err:?}"
       ),
-      UnreactError::MinifyCssFail(name) => write!(
+      UnreactError::MinifyCssFail(name, err) => write!(
         f,
-        "Failed to minify CSS file for '{name}' (UnreactError::MinifyCssFail)"
+        "Failed to minify CSS file for '{name}' (UnreactError::MinifyCssFail) - {err:?}"
       ),
       UnreactError::HandlebarsFail(name, err) => write!(
         f,
-        "Failed to render template with name '{name}' - {err:?} (UnreactError::RenderFail)"
+        "Failed to render template with name '{name}' (UnreactError::RenderFail) - {err:?}"
       ),
-      UnreactError::RegisterPartialFail(name) => write!(
+      UnreactError::RegisterPartialFail(name, err) => write!(
         f,
-        "Failed to register custom partial with name '{name}' (UnreactError::RegisterPartialFail)"
+        "Failed to register custom partial with name '{name}' (UnreactError::RegisterPartialFail) - {err:?}"
       ),
-      UnreactError::RegisterInbuiltPartialFail(name) => write!(
+      UnreactError::RegisterInbuiltPartialFail(name, err) => write!(
         f,
-        "Failed to register inbuilt partial '{name}' (UnreactError::RegisterInbuiltPartialFail)"
+        "Failed to register *inbuilt* partial '{name}' (UnreactError::RegisterInbuiltPartialFail) - {err:?}"
       ),
-      UnreactError::IoError(err, path) => write!(f, "IO Error: {err:?}, at '{path}'"),
+      UnreactError::IoError(err, path) => write!(
+        f,
+        "File Error: {err:?}, at path '{path}' (UnreactError::IoError)"
+      ),
     }
   }
 }

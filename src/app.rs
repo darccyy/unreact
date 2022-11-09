@@ -359,7 +359,7 @@ impl Unreact {
       // Convert from scss to css
       let parsed = match grass::from_string(content.to_string(), &grass::Options::default()) {
         Ok(x) => x,
-        Err(_) => return Err(UnreactError::ScssConvertFail(path.to_string())),
+        Err(err) => return Err(UnreactError::ScssConvertFail(path.to_string(), err.to_string())),
       };
 
       // Minify if enabled
@@ -369,7 +369,7 @@ impl Unreact {
 
         match Minifier::default().minify(&parsed, Level::Two) {
           Ok(x) => x,
-          Err(_) => return Err(UnreactError::MinifyCssFail(path.to_string())),
+          Err(err) => return Err(UnreactError::MinifyCssFail(path.to_string(), err.to_string())),
         }
       } else {
         // Un-minified file
@@ -434,15 +434,15 @@ impl Unreact {
 
     // Register all other templates as partials
     for (name, part) in &self.templates {
-      if let Err(_) = reg.register_partial(name, part) {
-        return Err(UnreactError::RegisterPartialFail(name.to_string()));
+      if let Err(err) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterPartialFail(name.to_string(), err));
       }
     }
 
     // Register inbuilt partials
     for (name, part) in self.inbuilt_partials() {
-      if let Err(_) = reg.register_partial(name, part) {
-        return Err(UnreactError::RegisterInbuiltPartialFail(name.to_string()));
+      if let Err(err) = reg.register_partial(name, part) {
+        return Err(UnreactError::RegisterInbuiltPartialFail(name.to_string(), err));
       }
     }
 
