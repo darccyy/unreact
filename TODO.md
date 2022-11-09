@@ -1,6 +1,5 @@
 # TODO
 
-- Add more description to errors
 - Add issue templates
 - Add examples folder
 - Add icon image
