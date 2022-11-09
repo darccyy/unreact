@@ -2,7 +2,6 @@
 
 - Add issue templates
 - Add examples folder
-- Add icon image
 
 ## Maybe?
 
