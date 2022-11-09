@@ -45,7 +45,7 @@ pub enum UnreactError {
   ///  - Checking for any bugs or unsupported features in the `.hbs` file
   ///
   /// See: [handlebars](https://crates.io/crates/handlebars) crate
-  RenderFail(String),
+  HandlebarsFail(String, handlebars::RenderError),
 
   /// Failed to register partial
   ///
@@ -87,9 +87,9 @@ impl std::fmt::Display for UnreactError {
         f,
         "Failed to minify CSS file for '{name}' (UnreactError::MinifyCssFail)"
       ),
-      UnreactError::RenderFail(name) => write!(
+      UnreactError::HandlebarsFail(name, err) => write!(
         f,
-        "Failed to render template with name '{name}' (UnreactError::RenderFail)"
+        "Failed to render template with name '{name}' - {err:?} (UnreactError::RenderFail)"
       ),
       UnreactError::RegisterPartialFail(name) => write!(
         f,

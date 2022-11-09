@@ -455,7 +455,7 @@ impl Unreact {
     // Render template
     match reg.render_template(template, &data) {
       Ok(x) => Ok(x),
-      Err(_) => Err(UnreactError::RenderFail(name.to_string())),
+      Err(err) => Err(UnreactError::HandlebarsFail(name.to_string(), err)),
     }
   }
 
