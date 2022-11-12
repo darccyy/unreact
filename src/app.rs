@@ -359,7 +359,12 @@ impl Unreact {
       // Convert from scss to css
       let parsed = match grass::from_string(content.to_string(), &grass::Options::default()) {
         Ok(x) => x,
-        Err(err) => return Err(UnreactError::ScssConvertFail(path.to_string(), err.to_string())),
+        Err(err) => {
+          return Err(UnreactError::ScssConvertFail(
+            path.to_string(),
+            err.to_string(),
+          ))
+        }
       };
 
       // Minify if enabled
@@ -369,7 +374,12 @@ impl Unreact {
 
         match Minifier::default().minify(&parsed, Level::Two) {
           Ok(x) => x,
-          Err(err) => return Err(UnreactError::MinifyCssFail(path.to_string(), err.to_string())),
+          Err(err) => {
+            return Err(UnreactError::MinifyCssFail(
+              path.to_string(),
+              err.to_string(),
+            ))
+          }
         }
       } else {
         // Un-minified file
@@ -442,7 +452,10 @@ impl Unreact {
     // Register inbuilt partials
     for (name, part) in self.inbuilt_partials() {
       if let Err(err) = reg.register_partial(name, part) {
-        return Err(UnreactError::RegisterInbuiltPartialFail(name.to_string(), err));
+        return Err(UnreactError::RegisterInbuiltPartialFail(
+          name.to_string(),
+          err,
+        ));
       }
     }
 

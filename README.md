@@ -10,6 +10,8 @@ Submit issue [here](https://github.com/darccyy/unreact/issues/new)
 
 For a quick start, check out [Unreact Template](https://github.com/darccyy/unreact-template)
 
+No custom helpers :(
+
 ## Production
 
 ```ps1
