@@ -1,5 +1,6 @@
 # TODO
 
+- Fix ordered list numbers
 - Add issue templates
 - Add examples folder
 
