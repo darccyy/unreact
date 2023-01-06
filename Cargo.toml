@@ -13,12 +13,15 @@ exclude = [
   "public",
   "target",
   "justfile",
+  "examples",
 ]
 documentation = "https://docs.rs/unreact/latest/unreact"
 repository = "https://github.com/darccyy/unreact"
 authors = ["darcy"]
 keywords = ["framework", "ssg", "static", "site", "web"]
 categories = ["web-programming", "template-engine"]
+
+[workspace]
 
 [dependencies]
 grass = "0.11.2"
